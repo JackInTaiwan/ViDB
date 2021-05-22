@@ -16,10 +16,11 @@ class Controller(socketserver.BaseRequestHandler):
     def __init__(self, *args, **kwargs):
         self.max_reception_byte = int(os.getenv("connection.max_reception_byte"))
         self.msg_converter = Controller.msg_converter
+        self.storage_engine = Controller.storage_engine
+
         super().__init__(*args, **kwargs)
         
 
-        
     def handle(self):
         try:
             msg = self.request.recv(self.max_reception_byte+1)
@@ -33,11 +34,11 @@ class Controller(socketserver.BaseRequestHandler):
                 data = self.msg_converter.parse(decoded_msg)
 
                 if not data:
-                    # TODO
-                    pass
+                    response = {"success": False, "error_msg": EM.CANNOT_PARSE_MSG_BODY}
+                    encoded_response = self.msg_converter.encode(response)
+                    self.request.send(encoded_response)
 
-                result = OPERATION[data["request_type"]](data["body"])
-
+                result = OPERATION[data["request_type"]](body=data["body"], storage_engine=self.storage_engine)
                 encoded_result = self.msg_converter.encode(result)
                 
                 # Send the result back

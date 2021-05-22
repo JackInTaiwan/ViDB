@@ -1,0 +1,5 @@
+numpy==1.20.3
+opencv-python==4.5.1.48
+Pillow==8.2.0
+ruamel.yaml==0.17.4
+ruamel.yaml.clib==0.2.2

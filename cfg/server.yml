@@ -8,4 +8,9 @@ connection:
   max_reception_byte: 100000
 
 msg_converter:
+  model: "default"
   encoding: "utf-8"
+
+storage_engine:
+  model: "default"
+  

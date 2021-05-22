@@ -26,6 +26,15 @@ def setup_msg_converter(model="default"):
     return converter
 
 
+def setup_storage_engine(model="default"):
+    try:
+        storage_engine = CONVERTER[model]()
+    except:
+        storage_engine = CONVERTER["default"]()
+
+    return storage_engine
+
+
 def setup_operation():
     import pkgutil
     from importlib import import_module
@@ -33,4 +42,3 @@ def setup_operation():
 
     for importer, modname, ispkg in pkgutil.iter_modules(operation.__path__):
         import_module("operation.{}".format(modname))
-    

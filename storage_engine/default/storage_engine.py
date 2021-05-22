@@ -1,0 +1,2 @@
+def example(image):
+    pass

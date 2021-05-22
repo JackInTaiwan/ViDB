@@ -4,7 +4,7 @@ from variable import operation as OP
 
 
 @register_as_operation(name=OP.INSERT_ONE)
-def insert_instance(image_byte):
+def insert_instance(body=None, storage_engine=None):
     # TODO
     # do nothing
     return {
