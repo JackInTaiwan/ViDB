@@ -1,4 +1,4 @@
-# Hang out with Visual Data: Visual Oriented Database (ViDB)
+# Hang out with Visual Data: Visual Data Oriented Database (ViDB)
 
 
 ## Contributors
