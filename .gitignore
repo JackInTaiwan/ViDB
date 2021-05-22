@@ -1,0 +1,9 @@
+# Dirs
+.vscode/
+.venv/
+__pycache__/
+
+
+# Files
+log/*
+!**/*.gitkeep
