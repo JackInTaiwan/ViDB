@@ -1,9 +1,13 @@
 '''
+Interface data formats
+images/thumbnails: .png or .jpg
+metadata: TBD
+features: nparray
+----------------------------
 Storage Formats
 images/thumbnails: .png
 metadata: .csv for small size, .json for hierarchial structure
 features: saved as .npy or pickle
-
 '''
 def dump_one(image):
     pass
