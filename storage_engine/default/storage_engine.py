@@ -2,6 +2,7 @@ import uuid
 import os
 import json
 import time
+import torch
 '''
 Interface data formats
 images/thumbnails: string
@@ -15,7 +16,11 @@ features: saved as .pt/tensor
 '''
 
 CREATE_STORAGE_DIR = "../storage"
-id = "63fdbd9a5fd24e95b021bcd8f649c07c" 
+# id = "63fdbd9a5fd24e95b021bcd8f649c07c" 
+# image = 'iVBORw0KGgoAAAANSUhEUgAABoIAAAaCCAYAAAABZu+EAAAqOElEQVR42uzBAQEAAACAkP6v7ggK'
+# thumbnail = 'iVBORw0KGgoAAAANSUhEUgAABoIAAAaCCAYAAAABZu+EAAAqOElEQVR42uzBAQEAAACAkP6v7ggK'
+# features = 
+# metadata = {'tag':None, 'file_type':'.png', 'file_name':'01'}
 
 if not os.path.exists(CREATE_STORAGE_DIR):
     os.makedirs(CREATE_STORAGE_DIR+"/image")
@@ -47,7 +52,7 @@ def create_one(image, thumbnail, features, metadata):
 
     # save features to...
     fp = os.path.join(CREATE_STORAGE_DIR, "features", fd)
-    features
+    torch.save(features, fp +".txt")
 
     # save metadata to...
     fp = os.path.join(CREATE_STORAGE_DIR, "metadata", fd)
@@ -78,7 +83,7 @@ def read_one(id, mode = 'all'): # mode: TBD
 
     # retrieve features object as ...
     features = os.path.join(CREATE_STORAGE_DIR, "features", fd + ".pt") # TBD
-
+    torch.load()
     # retrieve metadata object as json
     fp = os.path.join(CREATE_STORAGE_DIR, "metadata", fd + ".json")
     metadata = json.load(fp)
@@ -147,7 +152,6 @@ def locate_id(id=None): # TBD: how to relocate files
     # mode: without hierarchial structure
     file_path = os.path.join(CREATE_STORAGE_DIR, id)
 
-    
     return file_path
 
 '''
