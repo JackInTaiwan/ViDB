@@ -1,6 +1,7 @@
 import uuid
 import os
 import json
+import time
 '''
 Interface data formats
 images/thumbnails: string
@@ -14,7 +15,7 @@ features: saved as .pt/tensor
 '''
 
 CREATE_STORAGE_DIR = "../storage"
-id = "63fdbd9a5fd24e95b021bcd8f649c07c"
+id = "63fdbd9a5fd24e95b021bcd8f649c07c" 
 
 if not os.path.exists(CREATE_STORAGE_DIR):
     os.makedirs(CREATE_STORAGE_DIR+"/image")
@@ -46,11 +47,12 @@ def create_one(image, thumbnail, features, metadata):
 
     # save features to...
     fp = os.path.join(CREATE_STORAGE_DIR, "features", fd)
-    # save features
+    features
 
     # save metadata to...
     fp = os.path.join(CREATE_STORAGE_DIR, "metadata", fd)
     with open(fp +".json", "r+") as file:
+        metadata.update({'c_at':generate_c_at()}) # update create time
         json.dump(metadata, file)
 
     return 'Success, create instance:' + id
@@ -80,18 +82,28 @@ def read_one(id, mode = 'all'): # mode: TBD
     # retrieve metadata object as json
     fp = os.path.join(CREATE_STORAGE_DIR, "metadata", fd + ".json")
     metadata = json.load(fp)
-
+    
     return (image, thumbnail, features, metadata,) # TBD: how to return independently
 
-def read_many(id):
-    pass
+def read_many(id:list, mode = 'all'): # mode: TBD
+    image = []
+    thumbnail = []
+    features = []
+    metadata = []
+    for i in id:
+        img, thmbnl, ftrs, mtdt = read_one(i, mode)
+        image.append(img)
+        thumbnail.append(thmbnl)
+        features.append(ftrs)
+        metadata.append(mtdt)
+    return (image, thumbnail, features, metadata,)
 
-def delete_one(id):
+def delete_one(id): 
     path = locate_id(id)
     os.remove(path)
     pass
 
-def delete_many(id:list):
+def delete_many(id:list): # TBD: how to relocate files
     for i in id:
         path = locate_id(id)
         os.remove(path)
@@ -99,40 +111,41 @@ def delete_many(id:list):
         storage_reconstruct()
     pass
 
-def update_metadata(id):
-    
+def update_metadata(id, metadata):
+    # rewrite files? TBD
     pass
 
 def generate_id():
     id = uuid.uuid4().hex
     return id
 
-def generate_c_at():
+def generate_c_at(): # create time
+    return time.time()
+
+def storage_reconstruct(): # TBD: how to relocate files
     pass
 
-def storage_reconstruct():
-    pass
-
-def locate_id(id=None):
+def locate_id(id=None): # TBD: how to relocate files
     if id == None:
         # generate unique id
         id = generate_id()
-    # Opening JSON file
-    with open(CREATE_STORAGE_DIR+"/index.json", "r+") as file:
-        data = json.load(file)
-        rt = -1
-        for f in data['folder'].keys():
-            if f.values() < 100:
-                rt = f 
-                break
-        if rt == -1:
-            
-        data.update(str(data['folder'][-1]):id)
-        file.seek(0) # relocate the pointer
-        json.dump(data, file)
-    file_path
+    # # Opening JSON file
+    # with open(CREATE_STORAGE_DIR+"/index.json", "r+") as file:
+    #     data = json.load(file)
+    #     rt = -1
+    #     for f in data['folder'].keys():
+    #         if f.values() < 100:
+    #             rt = f 
+    #             break
+    #     if rt == -1:
+    #         # create new folder
+    #         pass
+    #     data.update(str(data['folder'][-1]):id)
+    #     file.seek(0) # relocate the pointer
+    #     json.dump(data, file)
+    
     # mode: without hierarchial structure
-    file_path = CREATE_STORAGE_DIR + '/'+id
+    file_path = os.path.join(CREATE_STORAGE_DIR, id)
 
     
     return file_path
