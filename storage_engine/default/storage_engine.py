@@ -30,7 +30,7 @@ if not os.path.exists(CREATE_STORAGE_DIR):
     fd = os.open( CREATE_STORAGE_DIR+"/index.json", os.O_CREAT ) 
     os.close(fd)
 
-def create_one(image, thumbnail, features, metadata):
+def create_one(image:str, thumbnail:str, features, metadata:json):
     if image == None:
         return 'image can\'t be NoneType'
 
@@ -62,33 +62,41 @@ def create_one(image, thumbnail, features, metadata):
 
     return 'Success, create instance:' + id
 
-def create_many(image, thumbnail, features, metadata):
+def create_many(image:list, thumbnail:list, features:list, metadata:list):
     for i in range(len(image)):
         create_one(image[i],thumbnail[i],features[i], metadata[1])
     return str(len(image)) + ' instances insert complete'
 
 def read_one(id, mode = 'all'): # mode: TBD
+    # mode = "image|thumbnail|features|metadata"
+    mode = mode.split("|")
+
     # locate file directory
     fd = locate_id(id)
 
     # retrieve image object as string
-    fp = os.path.join(CREATE_STORAGE_DIR, "image", fd + ".txt")
-    f = os.open(fp, os.O_RDONLY)
-    image = str(os.read(f, f))
-
+    if 'all'|'image' in mode:
+        fp = os.path.join(CREATE_STORAGE_DIR, "image", fd + ".txt")
+        f = os.open(fp, os.O_RDONLY)
+        image = str(os.read(f, f))
+    
     # retrieve thumbnail object as string
-    fp = os.path.join(CREATE_STORAGE_DIR, "thumbnail", fd + ".txt")
-    f = os.open(fp, os.O_RDONLY)
-    thumbnail = str(os.read(f, f))
+    if 'all'|'thumbnail' in mode:
+        fp = os.path.join(CREATE_STORAGE_DIR, "thumbnail", fd + ".txt")
+        f = os.open(fp, os.O_RDONLY)
+        thumbnail = str(os.read(f, f))
 
     # retrieve features object as ...
-    features = os.path.join(CREATE_STORAGE_DIR, "features", fd + ".pt") # TBD
-    torch.load()
+    if 'all'|'features' in mode:
+        features = os.path.join(CREATE_STORAGE_DIR, "features", fd + ".pt") # TBD
+        torch.load()
+        
     # retrieve metadata object as json
-    fp = os.path.join(CREATE_STORAGE_DIR, "metadata", fd + ".json")
-    metadata = json.load(fp)
+    if 'all'|'metadata' in mode:
+        fp = os.path.join(CREATE_STORAGE_DIR, "metadata", fd + ".json")
+        metadata = json.load(fp)
     
-    return (image, thumbnail, features, metadata,) # TBD: how to return independently
+    return image, thumbnail, features, metadata # TBD: how to return independently
 
 def read_many(id:list, mode = 'all'): # mode: TBD
     image = []
