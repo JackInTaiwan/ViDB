@@ -16,10 +16,10 @@ features: saved as .pt/tensor
 '''
 
 CREATE_STORAGE_DIR = "../storage"
-# id = "63fdbd9a5fd24e95b021bcd8f649c07c" 
+# index = "63fdbd9a5fd24e95b021bcd8f649c07c" 
 # image = 'iVBORw0KGgoAAAANSUhEUgAABoIAAAaCCAYAAAABZu+EAAAqOElEQVR42uzBAQEAAACAkP6v7ggK'
 # thumbnail = 'iVBORw0KGgoAAAANSUhEUgAABoIAAAaCCAYAAAABZu+EAAAqOElEQVR42uzBAQEAAACAkP6v7ggK'
-# features = 
+# features = []
 # metadata = {'tag':None, 'file_type':'.png', 'file_name':'01'}
 
 if not os.path.exists(CREATE_STORAGE_DIR):
@@ -34,76 +34,84 @@ def create_one(image:str, thumbnail:str, features, metadata:json):
     if image == None:
         return 'image can\'t be NoneType'
 
-    # generate unique id
-    id = generate_id()
-    fd = locate_id(id)
+    # generate unique index
+    index = generate_id()
+    fd = locate_id(index)
 
-    # save image to...
-    fp = os.path.join(CREATE_STORAGE_DIR, "image", fd)
-    f = os.open( fp +".txt", os.O_RDWR|os.O_CREAT ) 
-    os.write(f, image.encode())
-    os.close(f)
+    try:
+        # save image to...
+        fp = os.path.join(CREATE_STORAGE_DIR, "image", fd)
+        f = os.open( fp +".txt", os.O_RDWR|os.O_CREAT ) 
+        os.write(f, image.encode())
+        os.close(f)
 
-    # save thumbnail to...
-    fp = os.path.join(CREATE_STORAGE_DIR, "thumbnail", fd)
-    f = os.open( fp +".txt", os.O_RDWR|os.O_CREAT ) 
-    os.write(f, thumbnail.encode())
-    os.close(f)
+        # save thumbnail to...
+        fp = os.path.join(CREATE_STORAGE_DIR, "thumbnail", fd)
+        f = os.open( fp +".txt", os.O_RDWR|os.O_CREAT ) 
+        os.write(f, thumbnail.encode())
+        os.close(f)
 
-    # save features to...
-    fp = os.path.join(CREATE_STORAGE_DIR, "features", fd)
-    torch.save(features, fp +".txt")
+        # save features to...
+        fp = os.path.join(CREATE_STORAGE_DIR, "features", fd)
+        torch.save(features, fp +".pt")
 
-    # save metadata to...
-    fp = os.path.join(CREATE_STORAGE_DIR, "metadata", fd)
-    with open(fp +".json", "r+") as file:
-        metadata.update({'c_at':generate_c_at()}) # update create time
-        json.dump(metadata, file)
+        # save metadata to...
+        fp = os.path.join(CREATE_STORAGE_DIR, "metadata", fd)
+        with open(fp +".json", "x") as file:
+            metadata.update({'index':index,'c_at':generate_c_at()}) # update create time # time.time()
+            json.dump(metadata, file)
+    except:
+        raise
 
-    return 'Success, create instance:' + id
+    return 'Success, create instance:' + index
 
 def create_many(image:list, thumbnail:list, features:list, metadata:list):
     for i in range(len(image)):
         create_one(image[i],thumbnail[i],features[i], metadata[1])
     return str(len(image)) + ' instances insert complete'
 
-def read_one(id, mode = 'all'): # mode: TBD
+def read_one(index, mode = 'all'): # mode: TBD
     # mode = "image|thumbnail|features|metadata"
-    mode = mode.split("|")
+    # smode = mode.split("|")
 
     # locate file directory
-    fd = locate_id(id)
-
-    # retrieve image object as string
-    if 'all'|'image' in mode:
-        fp = os.path.join(CREATE_STORAGE_DIR, "image", fd + ".txt")
-        f = os.open(fp, os.O_RDONLY)
-        image = str(os.read(f, f))
-    
-    # retrieve thumbnail object as string
-    if 'all'|'thumbnail' in mode:
-        fp = os.path.join(CREATE_STORAGE_DIR, "thumbnail", fd + ".txt")
-        f = os.open(fp, os.O_RDONLY)
-        thumbnail = str(os.read(f, f))
-
-    # retrieve features object as ...
-    if 'all'|'features' in mode:
-        features = os.path.join(CREATE_STORAGE_DIR, "features", fd + ".pt") # TBD
-        torch.load()
+    fd = locate_id(index)
+    try:
+        # retrieve image object as string
+        if ('all' in mode) | ('image' in mode):
+            fp = os.path.join(CREATE_STORAGE_DIR, "image", fd + ".txt")
+            f = os.open(fp, os.O_RDONLY)
+            image = str(os.read(f, f))
+            os.close(f)
         
-    # retrieve metadata object as json
-    if 'all'|'metadata' in mode:
-        fp = os.path.join(CREATE_STORAGE_DIR, "metadata", fd + ".json")
-        metadata = json.load(fp)
-    
+        # retrieve thumbnail object as string
+        if ('all' in mode) | ('thumbnail' in mode):
+            fp = os.path.join(CREATE_STORAGE_DIR, "thumbnail", fd + ".txt")
+            f = os.open(fp, os.O_RDONLY)
+            thumbnail = str(os.read(f, f))
+            os.close(f)
+
+        # retrieve features object as ...
+        if ('all' in mode) | ('features' in mode):
+            fp = os.path.join(CREATE_STORAGE_DIR, "features", fd + ".pt") # TBD
+            features = torch.load(fp)
+            
+        # retrieve metadata object as json
+        if ('all' in mode) | ('metadata' in mode):
+            fp = os.path.join(CREATE_STORAGE_DIR, "metadata", fd + ".json")
+            with open(fp, "r") as file:
+                metadata = json.load(file)
+    except:
+        raise
+
     return image, thumbnail, features, metadata # TBD: how to return independently
 
-def read_many(id:list, mode = 'all'): # mode: TBD
+def read_many(index:list, mode = 'all'): # mode: TBD
     image = []
     thumbnail = []
     features = []
     metadata = []
-    for i in id:
+    for i in index:
         img, thmbnl, ftrs, mtdt = read_one(i, mode)
         image.append(img)
         thumbnail.append(thmbnl)
@@ -111,26 +119,45 @@ def read_many(id:list, mode = 'all'): # mode: TBD
         metadata.append(mtdt)
     return (image, thumbnail, features, metadata,)
 
-def delete_one(id): 
-    path = locate_id(id)
-    os.remove(path)
-    pass
+def delete_one(index): 
+    fd = locate_id(index)
+    try:
+        fp = os.path.join(CREATE_STORAGE_DIR, "image", fd + ".txt")
+        os.remove(fp)
+        fp = os.path.join(CREATE_STORAGE_DIR, "thumbnail", fd + ".txt")
+        os.remove(fp)
+        fp = os.path.join(CREATE_STORAGE_DIR, "features", fd + ".pt") # TBD
+        os.remove(fp)
+        fp = os.path.join(CREATE_STORAGE_DIR, "metadata", fd + ".json")
+        os.remove(fp)
+    except:
+        raise
 
-def delete_many(id:list): # TBD: how to relocate files
-    for i in id:
-        path = locate_id(id)
-        os.remove(path)
-    if len(id) > 100:
+    return 'Success, delete instance '+ index
+
+def delete_many(index:list): # TBD: how to relocate files
+    for i in index:
+        delete_one(i)
+    if len(index) > 100:
         storage_reconstruct()
     pass
 
-def update_metadata(id, metadata):
+def update_metadata(index, metadata):
+    '''
+    metadata: dict
+    '''
     # rewrite files? TBD
+    fd = locate_id(index)
+    fp = os.path.join(CREATE_STORAGE_DIR, "metadata", fd + ".json")
+    with open(fp, "+") as file:
+        metadata = json.load(file)
+        metadata.update(metadata)
+        json.dump(metadata, fp)
     pass
 
 def generate_id():
-    id = uuid.uuid4().hex
-    return id
+    index = uuid.uuid4().hex
+    return index
 
 def generate_c_at(): # create time
     return time.time()
@@ -138,10 +165,11 @@ def generate_c_at(): # create time
 def storage_reconstruct(): # TBD: how to relocate files
     pass
 
-def locate_id(id=None): # TBD: how to relocate files
-    if id == None:
-        # generate unique id
-        id = generate_id()
+def locate_id(index=None): # TBD: how to relocate files
+    if index == None:
+        # generate unique index
+        index = generate_id()
+
     # # Opening JSON file
     # with open(CREATE_STORAGE_DIR+"/index.json", "r+") as file:
     #     data = json.load(file)
@@ -153,12 +181,12 @@ def locate_id(id=None): # TBD: how to relocate files
     #     if rt == -1:
     #         # create new folder
     #         pass
-    #     data.update(str(data['folder'][-1]):id)
+    #     data.update(str(data['folder'][-1]):index)
     #     file.seek(0) # relocate the pointer
     #     json.dump(data, file)
     
     # mode: without hierarchial structure
-    file_path = os.path.join(CREATE_STORAGE_DIR, id)
+    file_path = index
 
     return file_path
 
