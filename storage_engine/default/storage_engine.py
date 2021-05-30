@@ -6,11 +6,11 @@ import torch
 '''
 Interface data formats
 images/thumbnails: string
-metadata: json
+metadata: .json/dict # TBD
 features: .pt/tensor
 ----------------------------
 Storage Formats
-images/thumbnails: string
+images/thumbnails: string as .txt
 metadata: .json for hierarchial structure
 features: saved as .pt/tensor
 '''
@@ -22,6 +22,7 @@ CREATE_STORAGE_DIR = "../storage"
 # features = []
 # metadata = {'tag':None, 'file_type':'.png', 'file_name':'01'}
 
+# Create storage folder
 if not os.path.exists(CREATE_STORAGE_DIR):
     os.makedirs(CREATE_STORAGE_DIR+"/image")
     os.makedirs(CREATE_STORAGE_DIR+"/thumbnail")
@@ -70,7 +71,7 @@ def create_many(image:list, thumbnail:list, features:list, metadata:list):
         create_one(image[i],thumbnail[i],features[i], metadata[1])
     return str(len(image)) + ' instances insert complete'
 
-def read_one(index, mode = 'all'): # mode: TBD
+def read_one(index, mode = 'all'):
     # mode = "image|thumbnail|features|metadata"
     # smode = mode.split("|")
 
@@ -106,7 +107,7 @@ def read_one(index, mode = 'all'): # mode: TBD
 
     return image, thumbnail, features, metadata # TBD: how to return independently
 
-def read_many(index:list, mode = 'all'): # mode: TBD
+def read_many(index:list, mode = 'all'):
     image = []
     thumbnail = []
     features = []
