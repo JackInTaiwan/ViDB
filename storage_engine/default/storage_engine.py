@@ -190,7 +190,8 @@ def locate_id(index=None): # TBD: how to relocate files
 
     return file_path
 
-'''
+'''index table
+
 'folder': [folder names 0-100],
 '0':['index', 'index2'...maybe100]
 ...
