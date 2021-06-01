@@ -13,5 +13,8 @@ msg_converter:
 
 storage_engine:
   model: "default"
-  storage_dir: "../storage/"
-  
+  storage_dir: "./storage/"
+
+visual_model:
+  model: "resnet50"
+  device: "cuda"
