@@ -2,13 +2,13 @@ import os
 import json
 
 from .util import catch_error
-from msg_converter.base import BaseConveter
+from msg_resolver.base import BaseResolver
 
 
 
-class Converter(BaseConveter):
+class Resolver(BaseResolver):
     def __init__(self):
-        self.encoding = os.getenv("msg_converter.encoding")
+        self.encoding = os.getenv("msg_resolver.encoding")
 
     
     def encode(self, decoded_msg, encoding=None):

@@ -1,6 +1,6 @@
 import os
 
-from msg_converter import CONVERTER
+from msg_resolver import RESOLVER
 from storage_engine import STORAGE_ENGINE
 
 from .util.config import Config
@@ -18,13 +18,13 @@ def setup_logging():
     logging_config(os.getenv("log.log_dir"))
 
 
-def setup_msg_converter(model="default"):
+def setup_msg_resolver(model="default"):
     try:
-        converter = CONVERTER[model]()
+        resolver = RESOLVER[model]()
     except:
-        converter = CONVERTER["default"]()
+        resolver = RESOLVER["default"]()
 
-    return converter
+    return resolver
 
 
 def setup_storage_engine(model="default"):
