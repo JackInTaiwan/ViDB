@@ -1,24 +1,20 @@
 import os
-import uuid
-import datetime
-import base64
+import logging
 import cv2
-import json
 import numpy as np
 
-from io import BytesIO
 from PIL import Image
-
 from . import register_as_operation
 from variable import operation as OP
+from visual_model.function import extract_feature
 
-from .util.visual_model import extract_feature
+logger = logging.getLogger(__name__)
 
 
 
 @register_as_operation(name=OP.INSERT_ONE_BY_PATH)
 def insert_one_by_path(body=None, storage_engine=None):
-    image_path, metadata=body["image_path", "metadata"]
+    image_path, metadata = body["image_path"], body["metadata"]
     
     try:
         img_PIL = Image.open(image_path)
@@ -29,13 +25,12 @@ def insert_one_by_path(body=None, storage_engine=None):
         img = np.asarray(img_PIL)
         compressed_img = compress(img)
 
-        
         # Transform image to string and store as .txt file
         original_str = image_to_string(img, filename)
         compressed_str = image_to_string(compressed_img, filename+'_compressed')
 
         # Read metadata and store as .json file
-        metadata = register_metadata(filename, img_PIL.format, img_PIL.size, img_PIL.mode, metadata)
+        metadata = register_metadata(img_PIL.format, img_PIL.size, img_PIL.mode, metadata)
 
         # Extract feature and store as .pt file
         feature = extract_feature(img_PIL)
@@ -47,7 +42,9 @@ def insert_one_by_path(body=None, storage_engine=None):
             "body": {}
         }   
 
-    except:
+    except Exception as e:
+        logger.error(e)
+
         return {
             "success": False,
             "body": {}
@@ -78,7 +75,9 @@ def insert_many_by_dir(body=None, storage_engine=None):
             "body": {}
         }   
 
-    except:
+    except Exception as e:
+        logger.error(e)
+
         return {
             "success": False,
             "body": {}

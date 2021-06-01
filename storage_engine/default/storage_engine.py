@@ -46,8 +46,8 @@ class StorageEngine(BaseStorageEngine):
             return 'image can\'t be NoneType'
 
         # generate unique index
-        index = generate_id()
-        fd = locate_id(index)
+        index = self.generate_id()
+        fd = self.locate_id(index)
 
         try:
             # save image to...
@@ -69,7 +69,7 @@ class StorageEngine(BaseStorageEngine):
             # save metadata to...
             fp = os.path.join(self.storage_dir, "metadata", fd)
             with open(fp +".json", "x") as file:
-                metadata.update({'index':index,'c_at':generate_c_at()}) # update create time # time.time()
+                metadata.update({'index': index, 'c_at': self.generate_c_at()}) # update create time # time.time()
                 json.dump(metadata, file)
         except:
             raise
@@ -79,7 +79,7 @@ class StorageEngine(BaseStorageEngine):
 
     def create_many(self, image:list, thumbnail:list, features:list, metadata:list):
         for i in range(len(image)):
-            create_one(image[i],thumbnail[i],features[i], metadata[1])
+            self.create_one(image[i],thumbnail[i],features[i], metadata[1])
         return str(len(image)) + ' instances insert complete'
 
 
@@ -88,7 +88,7 @@ class StorageEngine(BaseStorageEngine):
         # smode = mode.split("|")
 
         # locate file directory
-        fd = locate_id(index)
+        fd = self.locate_id(index)
         try:
             # retrieve image object as string
             if ('all' in mode) | ('image' in mode):
@@ -126,7 +126,7 @@ class StorageEngine(BaseStorageEngine):
         features = []
         metadata = []
         for i in index:
-            img, thmbnl, ftrs, mtdt = read_one(i, mode)
+            img, thmbnl, ftrs, mtdt = self.read_one(i, mode)
             image.append(img)
             thumbnail.append(thmbnl)
             features.append(ftrs)
@@ -135,7 +135,7 @@ class StorageEngine(BaseStorageEngine):
 
 
     def delete_one(self, index): 
-        fd = locate_id(index)
+        fd = self.locate_id(index)
         try:
             fp = os.path.join(self.storage_dir, "image", fd + ".txt")
             os.remove(fp)
@@ -155,7 +155,7 @@ class StorageEngine(BaseStorageEngine):
         for i in index:
             delete_one(i)
         if len(index) > 100:
-            storage_reconstruct()
+            self.storage_reconstruct()
         pass
 
 
@@ -164,7 +164,7 @@ class StorageEngine(BaseStorageEngine):
         metadata: dict
         '''
         # rewrite files? TBD
-        fd = locate_id(index)
+        fd = self.locate_id(index)
         fp = os.path.join(self.storage_dir, "metadata", fd + ".json")
         with open(fp, "+") as file:
             metadata = json.load(file)
@@ -189,7 +189,7 @@ class StorageEngine(BaseStorageEngine):
     def locate_id(self, index=None): # TBD: how to relocate files
         if index == None:
             # generate unique index
-            index = generate_id()
+            index = self.generate_id()
 
         # # Opening JSON file
         # with open(self.storage_dir+"/index.json", "r+") as file:
