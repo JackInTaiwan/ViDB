@@ -22,7 +22,7 @@ from storage_engine.default.storage_engine import (
 
 
 @register_as_operation(name=OP.INSERT_ONE_BY_PATH)
-def insert_one(body=None, storage_engine=None):
+def insert_one_by_path(body=None, storage_engine=None):
     image_path, meta_data=body["image_path", "meta_data"]
     try:
         img_PIL = Image.open(image_path)
@@ -59,7 +59,7 @@ def insert_one(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.INSERT_MANY_BY_DIR)
-def insert_many(body=None, storage_engine=None):
+def insert_many_by_dir(body=None, storage_engine=None):
     image_fold_dir, meta_data = body["image_fold_dir"], body["meta_data"]
 
     try:
