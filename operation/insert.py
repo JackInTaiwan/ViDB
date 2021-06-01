@@ -14,37 +14,33 @@ from variable import operation as OP
 
 from .util.visual_model import extract_feature
 
-from storage_engine.default.storage_engine import (
-    create_one,
-    create_many,
-)
-
 
 
 @register_as_operation(name=OP.INSERT_ONE_BY_PATH)
 def insert_one_by_path(body=None, storage_engine=None):
-    image_path, meta_data=body["image_path", "meta_data"]
+    image_path, metadata=body["image_path", "metadata"]
+    
     try:
         img_PIL = Image.open(image_path)
 
         filename = image_path.split('/')[-1].split('.')[0]
     
-        #PIL image to numpy
+        # PIL image to numpy
         img = np.asarray(img_PIL)
         compressed_img = compress(img)
 
         
-        #Transform image to string and store as .txt file
+        # Transform image to string and store as .txt file
         original_str = image_to_string(img, filename)
         compressed_str = image_to_string(compressed_img, filename+'_compressed')
 
-        # Read meta_data and store as .json file
-        meta_data = register_meta_data(filename, img_PIL.format, img_PIL.size, img_PIL.mode, meta_data)
+        # Read metadata and store as .json file
+        metadata = register_metadata(filename, img_PIL.format, img_PIL.size, img_PIL.mode, metadata)
 
-        #Extract feature and store as .pt file
+        # Extract feature and store as .pt file
         feature = extract_feature(img_PIL)
         
-        create_one(original_str, compressed_str, feature, meta_data)
+        storage_engine.create_one(original_str, compressed_str, feature, metadata)
 
         return {
             "success": True,
@@ -60,22 +56,22 @@ def insert_one_by_path(body=None, storage_engine=None):
 
 @register_as_operation(name=OP.INSERT_MANY_BY_DIR)
 def insert_many_by_dir(body=None, storage_engine=None):
-    image_fold_dir, meta_data = body["image_fold_dir"], body["meta_data"]
+    image_fold_dir, metadata = body["image_fold_dir"], body["metadata"]
 
     try:
         os.path.isdir(image_fold_dir)
 
-        if meta_data is not None:
-            metaFiles = meta_data.keys()
+        if metadata is not None:
+            metaFiles = metadata.keys()
 
             for filename in os.listdir(image_fold_dir):
                 if filename in metaFiles:      
-                    insert_one(os.path.join(image_fold_dir, filename), meta_data[filename])
+                    storage_engine.create_one(os.path.join(image_fold_dir, filename), metadata[filename])
                 else:
-                    insert_one(os.path.join(image_fold_dir, filename))
+                    storage_engine.create_one(os.path.join(image_fold_dir, filename))
         else:
             for filename in os.listdir(image_fold_dir):
-                insert_one(os.path.join(image_fold_dir, filename))
+                storage_engine.create_one(os.path.join(image_fold_dir, filename))
 
         return {
             "success": True,
@@ -89,33 +85,33 @@ def insert_many_by_dir(body=None, storage_engine=None):
         }
 
 
-def register_meta_data(form, size, mode, md):
-    #format: image type e.g.PNG, JPEG...
-    #size: image shape e.g.(227,227)
-    #mode: e.g. RGB, RGBA
-    meta_data = {}
-    meta_data['format'] = form
-    meta_data['size'] = size
-    meta_data['mode'] = mode
-    meta_data['tag_style'] = None
-    meta_data['tag_content'] = None
+def register_metadata(form, size, mode, md):
+    # format: image type e.g.PNG, JPEG...
+    # size: image shape e.g.(227,227)
+    # mode: e.g. RGB, RGBA
+    metadata = {}
+    metadata['format'] = form
+    metadata['size'] = size
+    metadata['mode'] = mode
+    metadata['tag_style'] = None
+    metadata['tag_content'] = None
 
     if md is not None:
         for key in md.keys():
-            meta_data[key] = md[key]
+            metadata[key] = md[key]
 
-    return meta_data
+    return metadata
 
 
 def compress(img, ratio=2): 
     hsv = cv2.cvtColor(img, cv2.COLOR_RGB2YCR_CB)
     Y_d = hsv
 
-    #downsample
+    # downsample
     Y_d[:,:,1] = ratio*np.round(Y_d[:,:,1]/ratio)
     Y_d[:,:,2] = ratio*np.round(Y_d[:,:,2]/ratio)
 
-    #Discrete cosine transform
+    # Discrete cosine transform
     Y_dct_freq = np.zeros_like(Y_d)
     Y_dct_show = np.zeros_like(Y_d)
     Y_d = np.float32(Y_d)
@@ -131,8 +127,8 @@ def compress(img, ratio=2):
 
 
 def image_to_string(img, filename):
-    #img: should be a numpy
-    #Run_length_encoding
+    # img: should be a numpy
+    # Run_length_encoding
     arranged = img.flatten()
 
     # Now RLE encoded data is written to a text file (You can check no of bytes in text file is very less than no of bytes in the image
