@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class Controller(socketserver.BaseRequestHandler):
     def __init__(self, *args, **kwargs):
         self.max_reception_byte = int(os.getenv("connection.max_reception_byte"))
-        self.msg_converter = Controller.msg_converter
+        self.msg_resolver = Controller.msg_resolver
         self.storage_engine = Controller.storage_engine
 
         super().__init__(*args, **kwargs)
@@ -27,19 +27,19 @@ class Controller(socketserver.BaseRequestHandler):
             
             if len(msg) > self.max_reception_byte:
                 response = {"success": False, "error_msg": EM.EXCEL_MAX_RECEPTION_BYTE}
-                encoded_response = self.msg_converter.encode(response)
+                encoded_response = self.msg_resolver.encode(response)
                 self.request.send(encoded_response)
             else:
-                decoded_msg = self.msg_converter.decode(msg)
-                data = self.msg_converter.parse(decoded_msg)
+                decoded_msg = self.msg_resolver.decode(msg)
+                data = self.msg_resolver.parse(decoded_msg)
 
                 if not data:
                     response = {"success": False, "error_msg": EM.CANNOT_PARSE_MSG_BODY}
-                    encoded_response = self.msg_converter.encode(response)
+                    encoded_response = self.msg_resolver.encode(response)
                     self.request.send(encoded_response)
 
                 result = OPERATION[data["request_type"]](body=data["body"], storage_engine=self.storage_engine)
-                encoded_result = self.msg_converter.encode(result)
+                encoded_result = self.msg_resolver.encode(result)
                 
                 # Send the result back
                 self.request.send(encoded_result)

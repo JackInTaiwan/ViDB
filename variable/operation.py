@@ -1,2 +1,5 @@
-INSERT_ONE = "insert_one"
-INSERT_MANY = "insert_many"
+INSERT_ONE_BY_BYTE = "insert_one"
+INSERT_ONE_BY_PATH = "insert_one_by_path"
+INSERT_MANY_BY_BYTE = "insert_many_by_byte"
+INSERT_MANY_BY_DIR = "insert_many_by_dir"
+INSERT_MANY_BY_PATHS = "insert_many_by_paths"

@@ -7,10 +7,14 @@ connection:
   max_connection: 10
   max_reception_byte: 100000
 
-msg_converter:
+msg_resolver:
   model: "default"
   encoding: "utf-8"
 
 storage_engine:
   model: "default"
-  
+  storage_dir: "./storage/"
+
+visual_model:
+  model: "resnet50"
+  device: "cuda"

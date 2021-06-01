@@ -6,7 +6,7 @@ from controller.controller import Controller
 from setup.server import (
     setup_config,
     setup_logging,
-    setup_msg_converter,
+    setup_msg_resolver,
     setup_operation,
     setup_storage_engine,
 )
@@ -26,16 +26,16 @@ if __name__ == "__main__":
     # Set up the operations
     setup_operation()
 
-    # Set up the message converter
-    msg_converter = setup_msg_converter(os.getenv("converter.model"))
+    # Set up the message resolver
+    msg_resolver = setup_msg_resolver(os.getenv("resolver.model"))
 
     # Set up the storage engine
-    storage_engine = setup_storage_engine(os.getenv("converter.model"))
+    storage_engine = setup_storage_engine(os.getenv("resolver.model"))
 
     # Set up the server
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     
-    Controller.msg_converter = msg_converter
+    Controller.msg_resolver = msg_resolver
     Controller.storage_engine = storage_engine
     
     server = socketserver.ThreadingTCPServer((os.getenv("connection.host"), int(os.getenv("connection.port"))), Controller)

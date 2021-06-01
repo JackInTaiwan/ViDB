@@ -2,7 +2,7 @@ import abc
 
 
 
-class BaseConveter(metaclass=abc.ABCMeta):
+class BaseResolver(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def encode(self, decoded_msg):
         return NotImplemented
