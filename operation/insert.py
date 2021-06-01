@@ -15,27 +15,9 @@ logger = logging.getLogger(__name__)
 @register_as_operation(name=OP.INSERT_ONE_BY_PATH)
 def insert_one_by_path(body=None, storage_engine=None):
     image_path, metadata = body["image_path"], body["metadata"]
-    
+
     try:
-        img_PIL = Image.open(image_path)
-
-        filename = image_path.split('/')[-1].split('.')[0]
-    
-        # PIL image to numpy
-        img = np.asarray(img_PIL)
-        compressed_img = compress(img)
-
-        # Transform image to string and store as .txt file
-        original_str = image_to_string(img, filename)
-        compressed_str = image_to_string(compressed_img, filename+'_compressed')
-
-        # Read metadata and store as .json file
-        metadata = register_metadata(img_PIL.format, img_PIL.size, img_PIL.mode, metadata)
-
-        # Extract feature and store as .pt file
-        feature = extract_feature(img_PIL)
-        
-        storage_engine.create_one(original_str, compressed_str, feature, metadata)
+        insert_one(image_path, metadata, storage_engine=storage_engine)
 
         return {
             "success": True,
@@ -56,19 +38,15 @@ def insert_many_by_dir(body=None, storage_engine=None):
     image_fold_dir, metadata = body["image_fold_dir"], body["metadata"]
 
     try:
-        os.path.isdir(image_fold_dir)
+        if not os.path.isdir(image_fold_dir):
+            raise ValueError("Invalid image_fold_dir")
 
-        if metadata is not None:
-            metaFiles = metadata.keys()
+        metadata = metadata or {}
+        meta_file_list = metadata.keys()
 
-            for filename in os.listdir(image_fold_dir):
-                if filename in metaFiles:      
-                    storage_engine.create_one(os.path.join(image_fold_dir, filename), metadata[filename])
-                else:
-                    storage_engine.create_one(os.path.join(image_fold_dir, filename))
-        else:
-            for filename in os.listdir(image_fold_dir):
-                storage_engine.create_one(os.path.join(image_fold_dir, filename))
+        for filename in os.listdir(image_fold_dir):
+            metadata_ = metadata[filename] if filename in meta_file_list else None
+            insert_one(os.path.join(image_fold_dir, filename), metadata_, storage_engine=storage_engine)
 
         return {
             "success": True,
@@ -82,6 +60,28 @@ def insert_many_by_dir(body=None, storage_engine=None):
             "success": False,
             "body": {}
         }
+
+
+def insert_one(image_path, metadata, storage_engine=None):
+    img_PIL = Image.open(image_path)
+
+    filename = image_path.split('/')[-1].split('.')[0]
+
+    # PIL image to numpy
+    img = np.asarray(img_PIL)
+    compressed_img = compress(img)
+
+    # Transform image to string and store as .txt file
+    original_str = image_to_string(img, filename)
+    compressed_str = image_to_string(compressed_img, filename+'_compressed')
+
+    # Read metadata and store as .json file
+    metadata = register_metadata(img_PIL.format, img_PIL.size, img_PIL.mode, metadata)
+
+    # Extract feature and store as .pt file
+    feature = extract_feature(img_PIL)
+    
+    storage_engine.create_one(original_str, compressed_str, feature, metadata)
 
 
 def register_metadata(form, size, mode, md):
