@@ -13,10 +13,18 @@ except socket.error as error:
 msg = {
     "request_type": "insert_one_by_path",
     "body": {
-        "image_path": "/home/jack/Downloads/t1.jpg",
+        "image_path": "/home/jack/Downloads/test/t1.jpg",
         "metadata": {}
     }
 }
+
+# msg = {
+#     "request_type": "insert_many_by_dir",
+#     "body": {
+#         "image_fold_dir": "/home/jack/Downloads/test",
+#         "metadata": {}
+#     }
+# }
 
 ### Encode the message
 str_ = json.dumps(msg)
