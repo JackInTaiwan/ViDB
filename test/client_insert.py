@@ -14,6 +14,7 @@ except socket.error as error:
 
 ### Insert all the images in "./data/example"
 image_dir = "./data/example/"
+# image_dir = "./data/test/images"
 image_files = sorted(os.listdir(image_dir))
 
 # Create metadata
@@ -24,6 +25,7 @@ for file in image_files:
     tag_style = "_".join(s[:-2])
     metadata[file] = {"tag_content": tag_content, "tag_style": tag_style}
 
+# operation 1: insert_many_by_dir
 msg = {
     "request_type": "insert_many_by_dir",
     "body": {
@@ -31,6 +33,15 @@ msg = {
         "metadata": metadata
     }
 }
+
+# operation 2: insert_one_by_path
+# msg = {
+#     "request_type": "insert_one_by_path",
+#     "body": {
+#         "image_path": "/home/jack/Downloads/test/t1.jpg",
+#         "metadata": {}
+#     }
+# }
 
 
 ### Encode the message

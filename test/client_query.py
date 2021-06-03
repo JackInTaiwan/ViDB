@@ -11,6 +11,7 @@ except socket.error as error:
     sys.stderr.write(str(error))
     exit(1)
 
+# operation 1: query_nearest_by_content
 msg = {
     "request_type": "query_nearest_by_content",
     "body": {
@@ -19,6 +20,7 @@ msg = {
     }
 }
 
+# operation 2: query_nearest_by_style
 # msg = {
 #     "request_type": "query_nearest_by_style",
 #     "body": {
@@ -27,6 +29,7 @@ msg = {
 #     }
 # }
 
+# operation 3: query_farthest_by_content
 # msg = {
 #     "request_type": "query_farthest_by_content",
 #     "body": {
@@ -35,6 +38,7 @@ msg = {
 #     }
 # }
 
+# operation 4: query_farthest_by_style
 # msg = {
 #     "request_type": "query_farthest_by_style",
 #     "body": {
@@ -43,6 +47,7 @@ msg = {
 #     }
 # }
 
+# operation 5: query_by_tag_all
 # msg = {
 #     "request_type": "query_by_tag_all",
 #     "body": {
@@ -52,6 +57,7 @@ msg = {
 #     }
 # }
 
+# operation 6: query_by_tag_partial
 # msg = {
 #     "request_type": "query_by_tag_partial",
 #     "body": {
@@ -61,6 +67,7 @@ msg = {
 #     }
 # }
 
+# operation 7: query_range_by_content
 # msg = {
 #     "request_type": "query_range_by_content",
 #     "body": {
@@ -73,6 +80,7 @@ msg = {
 #     }
 # }
 
+# operation 8: query_range_by_style
 # msg = {
 #     "request_type": "query_range_by_style",
 #     "body": {
