@@ -3,8 +3,13 @@ import os
 import json
 import time
 import torch
+import logging
 
 from ..base import BaseStorageEngine
+
+logger = logging.getLogger(__name__)
+
+
 
 '''
 Interface data formats
@@ -71,8 +76,9 @@ class StorageEngine(BaseStorageEngine):
             with open(fp +".json", "x") as file:
                 metadata.update({'index': index, 'c_at': self.generate_c_at()}) # update create time # time.time()
                 json.dump(metadata, file)
-        except:
-            raise
+                
+        except Exception as e:
+            raise e
 
         return 'Success, create instance:' + index
 
@@ -116,8 +122,9 @@ class StorageEngine(BaseStorageEngine):
                 fp = os.path.join(self.storage_dir, "metadata", fd + ".json")
                 with open(fp, "r") as file:
                     metadata = json.load(file)
-        except:
-            raise
+
+        except Exception as e:
+            raise e
 
         return image, thumbnail, features, metadata # TBD: how to return independently
 
@@ -157,38 +164,71 @@ class StorageEngine(BaseStorageEngine):
 
             return True
 
-        except:
+        except Exception as e:
+            logger.error(e)
             return False
 
 
     def delete_many(self, index:list): # TBD: how to relocate files
-        result_list = []
+        try:
+            for i in index:
+                result = self.delete_one(i)
+                if not result:
+                    # abort the transation
+                    return False
 
-        for i in index:
-            result = self.delete_one(i)
-            result_list.append(result)
+            if len(index) > 100:
+                self.storage_reconstruct()
 
-        if len(index) > 100:
-            self.storage_reconstruct()
-        
-        transaction_result = not (False in result_list)
+            return True
 
-        return transaction_result
+        except Exception as e:
+            logger.error(e)
+            return False
     
 
+    def update_one(self, index, metadata):
+        result = self.update_metadata(index, metadata)
+        return result
+    
 
-    def update_metadata(self, index, metadata):
+    def update_many(self, index:list, metadata:list):
+        if (len(index) != len(metadata)):
+            return False
+        try:
+            for index_, metadata_ in zip(index, metadata):
+                result = self.update_metadata(index_, metadata_)
+                if not result:
+                    # abort the transation
+                    return False
+            return True
+
+        except Exception as e:
+            logger.error(e)
+            return False
+
+
+    def update_metadata(self, index:str, target_metadata:dict):
         '''
-        metadata: dict
+        target_metadata: dict
         '''
-        # rewrite files? TBD
-        fd = self.locate_id(index)
-        fp = os.path.join(self.storage_dir, "metadata", fd + ".json")
-        with open(fp, "+") as file:
-            metadata = json.load(file)
-            metadata.update(metadata)
-            json.dump(metadata, fp)
-        pass
+        try:
+            # rewrite files? TBD
+            fd = self.locate_id(index)
+            fp = os.path.join(self.storage_dir, "metadata", fd + ".json")
+
+            with open(fp, "r") as f:
+                metadata = json.load(f)
+                metadata.update(target_metadata)
+
+            with open(fp, "w") as f:
+                json.dump(metadata, f)
+        
+            return True
+
+        except Exception as e:
+            logger.error(e)
+            return False
 
 
     def generate_id(self):

@@ -40,7 +40,12 @@ class BaseStorageEngine(metaclass=abc.ABCMeta):
 
 
     @abc.abstractmethod
-    def update_metadata(self, index, metadata):
+    def update_one(self, index, metadata):
+        return NotImplemented
+    
+
+    @abc.abstractmethod
+    def update_many(self, index, metadata):
         return NotImplemented
 
 

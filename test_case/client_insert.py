@@ -13,8 +13,8 @@ except socket.error as error:
 
 
 ### Insert all the images in "./data/example"
-image_dir = "./data/example/"
-# image_dir = "./data/test/images"
+# image_dir = "./data/example/"
+image_dir = "./data/test/images"
 image_files = sorted(os.listdir(image_dir))
 
 # Create metadata
