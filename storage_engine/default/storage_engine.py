@@ -144,6 +144,7 @@ class StorageEngine(BaseStorageEngine):
 
     def delete_one(self, index): 
         fd = self.locate_id(index)
+
         try:
             fp = os.path.join(self.storage_dir, "image", fd + ".txt")
             os.remove(fp)
@@ -153,18 +154,27 @@ class StorageEngine(BaseStorageEngine):
             os.remove(fp)
             fp = os.path.join(self.storage_dir, "metadata", fd + ".json")
             os.remove(fp)
-        except:
-            raise
 
-        return 'Success, delete instance '+ index
+            return True
+
+        except:
+            return False
 
 
     def delete_many(self, index:list): # TBD: how to relocate files
+        result_list = []
+
         for i in index:
-            delete_one(i)
+            result = self.delete_one(i)
+            result_list.append(result)
+
         if len(index) > 100:
             self.storage_reconstruct()
-        pass
+        
+        transaction_result = not (False in result_list)
+
+        return transaction_result
+    
 
 
     def update_metadata(self, index, metadata):
