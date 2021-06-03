@@ -90,6 +90,8 @@ class StorageEngine(BaseStorageEngine):
         # locate file directory
         fd = self.locate_id(index)
         try:
+            image, thumbnail, features, metadata = None, None, None, None
+
             # retrieve image object as string
             if ('all' in mode) | ('image' in mode):
                 fp = os.path.join(self.storage_dir, "image", fd + ".txt")
@@ -132,6 +134,12 @@ class StorageEngine(BaseStorageEngine):
             features.append(ftrs)
             metadata.append(mtdt)
         return (image, thumbnail, features, metadata,)
+
+
+    def read_all_idx(self):
+        image_files = sorted(os.listdir(os.path.join(self.storage_dir, "image")))
+        idx_list = [file[:-4] for file in image_files]
+        return idx_list
 
 
     def delete_one(self, index): 
