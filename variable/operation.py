@@ -12,3 +12,6 @@ QUERY_BY_TAG_ALL = "query_by_tag_all"
 QUERY_BY_TAG_PARTIAL = "query_by_tag_partial"
 QUERY_RANGE_BY_CONTENT = "query_range_by_content"
 QUERY_RANGE_BY_STYLE = "query_range_by_style"
+
+BROWSE_BY_RANDOM = "browse_by_random"
+BROWSE_BY_CLUSTER = "browse_by_cluster"
