@@ -4,6 +4,9 @@ INSERT_MANY_BY_BYTE = "insert_many_by_byte"
 INSERT_MANY_BY_DIR = "insert_many_by_dir"
 INSERT_MANY_BY_PATHS = "insert_many_by_paths"
 
+DELETE_ONE_BY_ID = "delete_one_by_id"
+DELETE_MANY_BY_IDS = "delete_many_by_ids"
+
 QUERY_NEAREST_BY_CONTENT = "query_nearest_by_content"
 QUERY_NEAREST_BY_STYLE = "query_nearest_by_style"
 QUERY_FARTHEST_BY_CONTENT = "query_farthest_by_content"
