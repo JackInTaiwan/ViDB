@@ -4,6 +4,7 @@ import json
 import time
 import torch
 import logging
+import glob
 
 from ..base import BaseStorageEngine
 
@@ -45,6 +46,18 @@ class StorageEngine(BaseStorageEngine):
             fd = os.open( self.storage_dir+"/index.json", os.O_CREAT) 
             os.close(fd)
 
+
+    def clean_storage(self):
+        folders = ["image","thumbnail", "metadata", "features"]
+        for f in folders:
+            folder_path = os.path.join(self.storage_dir,f,'*')
+            files = glob.glob(folder_path)
+            for f in files:
+                os.remove(f)
+        os.remove(self.storage_dir+"/index.json")
+        fd = os.open( self.storage_dir+"/index.json", os.O_CREAT) 
+        os.close(fd)
+        return 'Successfully clean all data!'
 
     def create_one(self, image:str, thumbnail:str, features, metadata:json):
         if image == None:
@@ -101,16 +114,28 @@ class StorageEngine(BaseStorageEngine):
             # retrieve image object as string
             if ('all' in mode) | ('image' in mode):
                 fp = os.path.join(self.storage_dir, "image", fd + ".txt")
+                
+                with open(fp, 'rb') as myfile:
+                    image=myfile.read()
+                '''
                 f = os.open(fp, os.O_RDONLY)
                 image = str(os.read(f, f))
                 os.close(f)
+                '''
+                
             
             # retrieve thumbnail object as string
             if ('all' in mode) | ('thumbnail' in mode):
                 fp = os.path.join(self.storage_dir, "thumbnail", fd + ".txt")
+                
+                with open(fp, 'rb') as myfile:
+                    thumbnail=myfile.read()
+                '''
                 f = os.open(fp, os.O_RDONLY)
                 thumbnail = str(os.read(f, f))
                 os.close(f)
+                '''
+                
 
             # retrieve features object as ...
             if ('all' in mode) | ('features' in mode):
