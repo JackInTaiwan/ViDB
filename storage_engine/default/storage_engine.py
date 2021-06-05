@@ -58,13 +58,13 @@ class StorageEngine(BaseStorageEngine):
             # save image to...
             fp = os.path.join(self.storage_dir, "image", fd)
             f = os.open( fp +".txt", os.O_RDWR|os.O_CREAT ) 
-            os.write(f, image.encode())
+            os.write(f, image)
             os.close(f)
 
             # save thumbnail to...
             fp = os.path.join(self.storage_dir, "thumbnail", fd)
             f = os.open( fp +".txt", os.O_RDWR|os.O_CREAT ) 
-            os.write(f, thumbnail.encode())
+            os.write(f, thumbnail)
             os.close(f)
 
             # save features to...
