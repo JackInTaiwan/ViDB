@@ -35,7 +35,7 @@ def delete_one_by_id(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.DELETE_ALL)
-def delete_many_by_ids(body=None, storage_engine=None):
+def delete_all(body=None, storage_engine=None):
 
     try:
         result = storage_engine.clean_storage()
