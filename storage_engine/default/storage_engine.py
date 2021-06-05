@@ -4,12 +4,14 @@ import json
 import time
 import torch
 import logging
-
+import btree
 from ..base import BaseStorageEngine
-
+# from bplustree import BPlusTree
 logger = logging.getLogger(__name__)
 
-
+tree = btree.Binary_search_tree()
+tree = btree.fill_tree(tree)
+tree.print_tree()
 
 '''
 Interface data formats
@@ -94,8 +96,8 @@ class StorageEngine(BaseStorageEngine):
         # smode = mode.split("|")
 
         # locate file directory
-        fd = self.locate_id(index)
         try:
+            fd = self.locate_id(index)
             image, thumbnail, features, metadata = None, None, None, None
 
             # retrieve image object as string
@@ -248,24 +250,41 @@ class StorageEngine(BaseStorageEngine):
         if index == None:
             # generate unique index
             index = self.generate_id()
+        '''
+        當沒有資料夾，開啟一個新的，並建立table表，新增資料夾名稱為key，value初始值為0，每新增一筆資料增加一
+        將資料存入資料夾，將絕對路徑存入btree
 
-        # # Opening JSON file
-        # with open(self.storage_dir+"/index.json", "r+") as file:
-        #     data = json.load(file)
-        #     rt = -1
-        #     for f in data['folder'].keys():
-        #         if f.values() < 100:
-        #             rt = f 
-        #             break
-        #     if rt == -1:
-        #         # create new folder
-        #         pass
-        #     data.update(str(data['folder'][-1]):index)
-        #     file.seek(0) # relocate the pointer
-        #     json.dump(data, file)
+        當資料夾滿了，開啟下一個新資料夾
+        重複動作
+
+        如何判斷資料夾已滿?
+        建立table表，紀錄每個folder目前有多少資料
+
+        btree建立:
+        root資料表，存入values, parent, left right child(得路徑)
+        '''
+        # Opening JSON file
+        with open(self.storage_dir+"/table.json", "r+") as file:
+        # with open(r"C:\Users\Asus\Documents\GitHub\ViDB\storage_engine\storage\table.json", "r+") as file:            
+            data = json.load(file)
+            file_path = -1 # 初始值
+            for k, v in data.items():
+                if v< 100: # 超過一百個開新資料夾
+                    file_path = k # 將要輸入的資料夾
+                    count = v
+                    break
+            if file_path == -1: # 代表前面資料夾已滿
+                # create new folder
+                # file_path = str(uuid.uuid4().hex)
+                file_path = str(generate_id(self))
+                os.makedirs(self.storage_dir + '/' + file_path)
+                count = 1
+            data.update({file_path:count})
+            file.seek(0) # relocate the pointer
+            json.dump(data, file)
         
         # mode: without hierarchial structure
-        file_path = index
+        # file_path = index
 
         return file_path
 
