@@ -12,12 +12,14 @@ except socket.error as error:
     exit(1)
 
 # operation 1: delete_one_by_id
+'''
 msg = {
     "request_type": "delete_one_by_id",
     "body": {
         "target_index": "a36eecce196245bbb40d17b8390e15c4"
     }
 }
+'''
 
 # operation 2: delete_one_by_id
 # msg = {
@@ -26,6 +28,13 @@ msg = {
 #         "target_index_list": ["ed656edceb0248e5922926535d7a5dfb"]
 #     }
 # }
+
+# operation 3: delete_all_data
+msg = {
+    "request_type": "delete_all",
+    "body": {
+    }
+}
 
 
 ### Encode the message
