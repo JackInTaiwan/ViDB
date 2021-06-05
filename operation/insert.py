@@ -7,6 +7,7 @@ from PIL import Image
 from . import register_as_operation
 from variable import operation as OP
 from visual_model.function import extract_feature
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,7 @@ def insert_one(image_path, metadata, storage_engine=None):
     filename = image_path.split('/')[-1].split('.')[0]
 
     # PIL image to numpy
-    compressed_img = compress(img)
+    compressed_img = compress(img_PIL)
 
     # Transform image to string and store as .txt file
     original_str = image_to_string(img_PIL, filename)
