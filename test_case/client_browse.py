@@ -25,17 +25,34 @@ msg = {
 #     }
 # }
 
+
 ### Encode the message
 str_ = json.dumps(msg)
 byte_ = str_.encode()
 encoded_msg = byte_
 
 socket_.send(encoded_msg)
-response = socket_.recv(1024)
-str_ = response.decode()
+
+str_ = ""
+while response:=socket_.recv(1024):
+    str_ += response.decode()
+
 
 ### Decode the message
 decoded_res = json.loads(str_)
-print(decoded_res)
+
+
+### Present the thumbnails
+for k, v in decoded_res["body"].items():
+    image_base64 = v
+    image_bytes = base64.b64decode(image_base64)
+    image = Image.open(io.BytesIO(image_bytes))
+    
+    image_array = np.array(image)
+    cv2.namedWindow(k)
+    cv2.moveWindow(k, 500, 500) 
+    cv2.imshow(k, image_array)
+    cv2.waitKey(0)
+    cv2.destroyWindow(k)
 
 socket_.close()
