@@ -29,7 +29,7 @@ features: saved as .pt/tensor
 # reallocation
     1. 當沒有資料夾，開啟一個新的，並建立storage_table.json, root.txt，新增資料夾名稱為key，value初始值為0，每新增一筆資料增加一
     2. 將資料存入或刪除後，修改storage_table.json, root.txt
-    3. 當資料夾滿了 (self.storage_table_max_buffer)，開啟下一個新資料夾
+    3. 當資料夾滿了 (self.storage_page_max_buffer)，開啟下一個新資料夾
         
 """
 
@@ -51,7 +51,7 @@ class StorageEngine(BaseStorageEngine):
 
     def __init__(self):
         self.storage_dir = os.getenv("storage_engine.storage_dir")
-        self.storage_table_max_buffer = int(os.getenv("storage_engine.storage_table_max_buffer"))
+        self.storage_page_max_buffer = int(os.getenv("storage_engine.storage_page_max_buffer"))
 
 
     def init_storage(self):
@@ -358,7 +358,7 @@ class StorageEngine(BaseStorageEngine):
             try:
                 data = json.load(f)
                 for k, v in data.items():
-                    if v < self.storage_table_max_buffer: # 超過一百個開新資料夾
+                    if v < self.storage_page_max_buffer: # 超過一百個開新資料夾
                         fd_path = k # 將要輸入的資料夾
                         break
             
