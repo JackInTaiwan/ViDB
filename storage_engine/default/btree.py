@@ -1,4 +1,15 @@
 from collections import deque 
+
+### Debug區 ###
+# tree = btree.Binary_search_tree()
+# tree = btree.fill_tree(tree)
+# tree.print_tree(path=True)
+# tree.search(tree.root, 9)
+# tree.deleteNode(tree.root, 33)
+# data = btree.serialize(tree.root)
+# ntree = btree.Binary_search_tree(btree.deserialize(data))
+# ntree.print_tree()
+
 class Node:
     def __init__(self, value=None, path=None):
         self.value = value

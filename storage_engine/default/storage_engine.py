@@ -9,15 +9,6 @@ from ..base import BaseStorageEngine
 
 logger = logging.getLogger(__name__)
 
-# tree = btree.Binary_search_tree()
-# tree = btree.fill_tree(tree)
-# tree.print_tree(path=True)
-# tree.search(tree.root, 9)
-# tree.deleteNode(tree.root, 33)
-# data = btree.serialize(tree.root)
-# ntree = btree.Binary_search_tree(btree.deserialize(data))
-# ntree.print_tree()
-
 '''
 Interface data formats
 images/thumbnails: string
@@ -28,8 +19,16 @@ Storage Formats
 images/thumbnails: string as .txt
 metadata: .json for hierarchial structure
 features: saved as .pt/tensor
-'''
 
+# storage_table.json: 紀錄每個資料夾裡有幾個檔案，在create, delete時更新
+# root.txt 是序列化的bstree, node之間以" "分隔, 每個Node裡存有(index, path)，以","分隔
+# reallocation
+    1. 當沒有資料夾，開啟一個新的，並建立storage_table.json, root.txt，新增資料夾名稱為key，value初始值為0，每新增一筆資料增加一
+    2. 將資料存入或刪除後，修改storage_table.json, root.txt
+    3. 當資料夾滿了(default:100)，開啟下一個新資料夾
+        
+'''
+### Debug區 ###
 # index = "63fdbd9a5fd24e95b021bcd8f649c07c" 
 # image = b'iVBORw0KGgoAAAANSUhEUgAABoIAAAaCCAYAAAABZu+EAAAqOElEQVR42uzBAQEAAACAkP6v7ggK'
 # thumbnail = b'iVBORw0KGgoAAAANSUhEUgAABoIAAAaCCAYAAAABZu+EAAAqOElEQVR42uzBAQEAAACAkP6v7ggK'
@@ -300,7 +299,6 @@ class StorageEngine(BaseStorageEngine):
             index = self.generate_id()
         
         # open root file, reconstruct bstree
-        # f = os.open(self.storage_dir +"/root.txt", os.O_RDWR|os.O_CREAT )
         with open(self.storage_dir+"/root.txt", "r+") as file:
             text = file.read()
             if text != '':
@@ -308,28 +306,14 @@ class StorageEngine(BaseStorageEngine):
             else: 
                 tree = btree.Binary_search_tree()
 
+
         # if node exist return file path
         if tree.search(tree.root, index) != None: # node existed
             return tree.search(tree.root, index).path
 
-        '''
-        當沒有資料夾，開啟一個新的，並建立table表，新增資料夾名稱為key，value初始值為0，每新增一筆資料增加一
-        將資料存入資料夾，將絕對路徑存入btree
 
-        當資料夾滿了，開啟下一個新資料夾
-        重複動作
-
-        如何判斷資料夾已滿?
-        建立table表，紀錄每個folder目前有多少資料
-
-        btree建立:
-        root資料表，存入values, parent, left right child(得路徑)
-        '''
         # if new node, create new file path
-
-        # Open JSON file
         with open(self.storage_dir+"/storage_table.json", "r+") as file:
-        # with open(r"C:\Users\Asus\Documents\GitHub\ViDB\storage_engine\storage\table.json", "r+") as file:            
             fd_path = -1 # 初始值
 
             try:
