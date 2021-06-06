@@ -3,14 +3,16 @@ import random
 import numpy as np
 import torch
 from torch.nn.functional import avg_pool2d
+import io
+import base64
+
 from PIL import Image
 from sklearn.cluster import KMeans
 from sklearn.metrics import pairwise_distances_argmin_min
 
 from . import register_as_operation
 from variable import operation as OP
-import base64
-import io
+
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +78,7 @@ def browse(num_inst=30, mode="random", storage_engine=None):
     
     elif mode == "cluster":
         for i, index in enumerate(index_list):
-            _, _, feature, _ = storage_engine.read_one(index, 'features')
+            _, _, feature, _ = storage_engine.read_one(index, "features")
             feature = feature[-1]                           # (1, 2048, 7, 7)
             feature = avg_pool2d(feature, feature.size(-1)) # (1, 2048, 1, 1)
             feature = feature.view(1, -1)                   # (1, 2048)
@@ -92,7 +94,7 @@ def browse(num_inst=30, mode="random", storage_engine=None):
         selected_idxs = np.array(index_list)[closest_idx].tolist()
 
     
-    _, thumbnail_bytes_imgs, _, _ = storage_engine.read_many(selected_idxs, mode ='thumbnail')
+    _, thumbnail_bytes_imgs, _, _ = storage_engine.read_many(selected_idxs, mode="thumbnail")
 
     output = {}
     

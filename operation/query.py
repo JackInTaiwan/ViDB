@@ -1,9 +1,9 @@
+import base64
 import logging
 
 from . import register_as_operation
 from variable import operation as OP
 from visual_model.function import content_loss, style_loss, get_central_feature, get_average_distance
-import base64
 
 logger = logging.getLogger(__name__)
 

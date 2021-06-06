@@ -1,3 +1,4 @@
+import io
 import os
 import logging
 import cv2
@@ -7,7 +8,6 @@ from PIL import Image
 from . import register_as_operation
 from variable import operation as OP
 from visual_model.function import extract_feature
-import io
 
 logger = logging.getLogger(__name__)
 
