@@ -6,6 +6,7 @@ INSERT_MANY_BY_PATHS = "insert_many_by_paths"
 
 DELETE_ONE_BY_ID = "delete_one_by_id"
 DELETE_MANY_BY_IDS = "delete_many_by_ids"
+DELETE_ALL = "delete_all"
 
 UPDATE_ONE_BY_ID = "update_one_by_id"
 UPDATE_MANY_BY_IDS = "update_many_by_ids"

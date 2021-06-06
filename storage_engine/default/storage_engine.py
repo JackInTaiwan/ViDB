@@ -4,12 +4,16 @@ import json
 import time
 import torch
 import logging
+import glob
 import btree as btree
+
 from ..base import BaseStorageEngine
 
 logger = logging.getLogger(__name__)
 
-'''
+
+
+"""
 Interface data formats
 images/thumbnails: string
 metadata: .json/dict # TBD
@@ -27,15 +31,15 @@ features: saved as .pt/tensor
     2. 將資料存入或刪除後，修改storage_table.json, root.txt
     3. 當資料夾滿了(default:100)，開啟下一個新資料夾
         
-'''
+"""
 ### Debug區 ###
 # index = "63fdbd9a5fd24e95b021bcd8f649c07c" 
-# image = b'iVBORw0KGgoAAAANSUhEUgAABoIAAAaCCAYAAAABZu+EAAAqOElEQVR42uzBAQEAAACAkP6v7ggK'
-# thumbnail = b'iVBORw0KGgoAAAANSUhEUgAABoIAAAaCCAYAAAABZu+EAAAqOElEQVR42uzBAQEAAACAkP6v7ggK'
+# image = b"iVBORw0KGgoAAAANSUhEUgAABoIAAAaCCAYAAAABZu+EAAAqOElEQVR42uzBAQEAAACAkP6v7ggK"
+# thumbnail = b"iVBORw0KGgoAAAANSUhEUgAABoIAAAaCCAYAAAABZu+EAAAqOElEQVR42uzBAQEAAACAkP6v7ggK"
 # features = []
-# metadata = {'tag':None, 'file_type':'.png', 'file_name':'01'}
+# metadata = {"tag":None, "file_type":".png", "file_name":"01"}
 # st = StorageEngine()
-# st.storage_dir = r'C:\Users\Asus\Documents\GitHub\ViDB\storage_engine\storage'
+# st.storage_dir = r"C:\Users\Asus\Documents\GitHub\ViDB\storage_engine\storage"
 # st.init_storage()
 # for i in range(100):
 #     st.create_one(image, thumbnail, features, metadata)
@@ -43,7 +47,19 @@ features: saved as .pt/tensor
 # st.delete_one("0079112b083242ff9b42d5fad4bc6738")
 # st.read_one("08aaec672da9415ea4b1d389800e3c28")
 
+
+
 class StorageEngine(BaseStorageEngine):
+    KW_IMAGE = "image"
+    KW_THUMBNAIL = "thumbnail"
+    KW_METADATA = "metadata"
+    KW_FEATURE = "features"
+
+    SUFFIX_IMAGE = ".txt"
+    SUFFIX_THUMBNAIL = ".txt"
+    SUFFIX_METADATA = ".json"
+    SUFFIX_FEATURE = ".pt"
+
     def __init__(self):
         self.storage_dir = os.getenv("storage_engine.storage_dir")
 
@@ -51,19 +67,38 @@ class StorageEngine(BaseStorageEngine):
     def init_storage(self):
         # Create storage folder
         if not os.path.exists(self.storage_dir):
-            os.makedirs(self.storage_dir+"/image")
-            os.makedirs(self.storage_dir+"/thumbnail")
-            os.makedirs(self.storage_dir+"/metadata")
-            os.makedirs(self.storage_dir+"/features")
-            fd = os.open( self.storage_dir+"/storage_table.json", os.O_CREAT) 
+            os.makedirs(os.path.join(self.storage_dir, self.KW_IMAGE))
+            os.makedirs(os.path.join(self.storage_dir, self.KW_THUMBNAIL))
+            os.makedirs(os.path.join(self.storage_dir, self.KW_METADATA))
+            os.makedirs(os.path.join(self.storage_dir, self.KW_FEATURE))
+            fd = os.open(os.path.join(self.storage_dir, "index.json"), os.O_CREAT)
             os.close(fd)
-            fd = os.open( self.storage_dir+"/root.txt", os.O_CREAT) 
+            fd = os.open(os.path.join(self.storage_dir, "storage_table.json"), os.O_CREAT) 
             os.close(fd)
+            fd = os.open(os.path.join(self.storage_dir, "root.txt"), os.O_CREAT) 
+            os.close(fd)
+
+
+    def clean_storage(self):
+        folders = [self.KW_IMAGE, self.KW_THUMBNAIL, self.KW_METADATA, self.KW_FEATURE]
+        for f in folders:
+            folder_path = os.path.join(self.storage_dir,f,"*")
+            files = glob.glob(folder_path)
+            for f in files:
+                os.remove(f)
+        os.remove(os.path.join(self.storage_dir, "index.json"))
+        fd = os.open(os.path.join(self.storage_dir, "index.json"), os.O_CREAT) 
+        os.close(fd)
+        
+        logger.info("Successfully clean all data.")
+
+        return True
 
 
     def create_one(self, image:str, thumbnail:str, features, metadata:json):
         if image == None:
-            return 'image can\'t be NoneType'
+            logger.error("Image cannot be NoneType")
+            raise ValueError("Image cannot be NoneType")
 
         # generate unique index
         index = self.generate_id()
@@ -71,40 +106,47 @@ class StorageEngine(BaseStorageEngine):
 
         try:
             # save image to...
-            fp = os.path.join(self.storage_dir, "image", fd)
-            f = os.open( fp +".txt", os.O_RDWR|os.O_CREAT ) 
+            fp = os.path.join(self.storage_dir, self.KW_IMAGE, fd)
+            f = os.open(fp+self.SUFFIX_IMAGE, os.O_RDWR|os.O_CREAT) 
             os.write(f, image)
             os.close(f)
 
             # save thumbnail to...
-            fp = os.path.join(self.storage_dir, "thumbnail", fd)
-            f = os.open( fp +".txt", os.O_RDWR|os.O_CREAT ) 
+            fp = os.path.join(self.storage_dir, self.KW_THUMBNAIL, fd)
+            f = os.open(fp+self.SUFFIX_THUMBNAIL, os.O_RDWR|os.O_CREAT)
             os.write(f, thumbnail)
             os.close(f)
 
             # save features to...
-            fp = os.path.join(self.storage_dir, "features", fd)
-            torch.save(features, fp +".pt")
+            fp = os.path.join(self.storage_dir, self.KW_FEATURE, fd)
+            torch.save(features, fp+self.SUFFIX_FEATURE)
 
             # save metadata to...
-            fp = os.path.join(self.storage_dir, "metadata", fd)
-            with open(fp +".json", "x") as file:
-                metadata.update({'index': index, 'c_at': self.generate_c_at()}) # update create time # time.time()
+            fp = os.path.join(self.storage_dir, self.KW_METADATA, fd)
+            with open(fp+self.SUFFIX_METADATA, "x") as file:
+                metadata.update({"index": index, "c_at": self.generate_c_at()}) # update create time # time.time()
                 json.dump(metadata, file)
+
             self.update_storage_table(fd)
+            
+            logger.info("Successfully create an instance with id={}.".format(index))
+
+            return True
+
         except Exception as e:
             raise e
-
-        return 'Success, create instance:' + index
 
 
     def create_many(self, image:list, thumbnail:list, features:list, metadata:list):
         for i in range(len(image)):
             self.create_one(image[i],thumbnail[i],features[i], metadata[1])
-        return str(len(image)) + ' instances insert complete'
+        
+        logger.info("Successfully insert {} instances.".format(len(image)))
+
+        return True
 
 
-    def read_one(self, index, mode = 'all'):
+    def read_one(self, index, mode = "all"):
         # mode = "image|thumbnail|features|metadata"
         # smode = mode.split("|")
 
@@ -114,27 +156,39 @@ class StorageEngine(BaseStorageEngine):
             image, thumbnail, features, metadata = None, None, None, None
 
             # retrieve image object as string
-            if ('all' in mode) | ('image' in mode):
-                fp = os.path.join(self.storage_dir, "image", fd + ".txt")
+            if ("all" in mode) | ("image" in mode):
+                fp = os.path.join(self.storage_dir, self.KW_IMAGE, fd + self.SUFFIX_IMAGE)
+                
+                with open(fp, "rb") as myfile:
+                    image=myfile.read()
+                """
                 f = os.open(fp, os.O_RDONLY)
                 image = str(os.read(f, f))
                 os.close(f)
+                """
+                
             
             # retrieve thumbnail object as string
-            if ('all' in mode) | ('thumbnail' in mode):
-                fp = os.path.join(self.storage_dir, "thumbnail", fd + ".txt")
+            if ("all" in mode) | ("thumbnail" in mode):
+                fp = os.path.join(self.storage_dir, self.KW_THUMBNAIL, fd + self.SUFFIX_THUMBNAIL)
+                
+                with open(fp, "rb") as myfile:
+                    thumbnail=myfile.read()
+                """
                 f = os.open(fp, os.O_RDONLY)
                 thumbnail = str(os.read(f, f))
                 os.close(f)
+                """
+                
 
             # retrieve features object as ...
-            if ('all' in mode) | ('features' in mode):
-                fp = os.path.join(self.storage_dir, "features", fd + ".pt") # TBD
+            if ("all" in mode) | ("features" in mode):
+                fp = os.path.join(self.storage_dir, self.KW_FEATURE, fd + self.SUFFIX_FEATURE) # TBD
                 features = torch.load(fp)
                 
             # retrieve metadata object as json
-            if ('all' in mode) | ('metadata' in mode):
-                fp = os.path.join(self.storage_dir, "metadata", fd + ".json")
+            if ("all" in mode) | ("metadata" in mode):
+                fp = os.path.join(self.storage_dir, self.KW_METADATA, fd + self.SUFFIX_METADATA)
                 with open(fp, "r") as file:
                     metadata = json.load(file)
 
@@ -144,7 +198,7 @@ class StorageEngine(BaseStorageEngine):
         return image, thumbnail, features, metadata # TBD: how to return independently
 
 
-    def read_many(self, index:list, mode = 'all'):
+    def read_many(self, index:list, mode = "all"):
         image = []
         thumbnail = []
         features = []
@@ -159,8 +213,9 @@ class StorageEngine(BaseStorageEngine):
 
 
     def read_all_idx(self):
-        file = open(self.storage_dir +"/root.txt", "r")
-        text = file.read()
+        with open(self.storage_dir +"/root.txt", "r") as f:
+            text = f.read()
+
         try:
             tree = btree.Binary_search_tree(btree.deserialize(text))
             idx_list = tree.print_tree()
@@ -173,19 +228,19 @@ class StorageEngine(BaseStorageEngine):
         fd = self.locate_id(index)
 
         try:
-            fp = os.path.join(self.storage_dir, "image", fd + ".txt")
+            fp = os.path.join(self.storage_dir, self.KW_IMAGE, fd + self.SUFFIX_IMAGE)
             os.remove(fp)
-            fp = os.path.join(self.storage_dir, "thumbnail", fd + ".txt")
+            fp = os.path.join(self.storage_dir, self.KW_THUMBNAIL, fd + self.SUFFIX_THUMBNAIL)
             os.remove(fp)
-            fp = os.path.join(self.storage_dir, "features", fd + ".pt") # TBD
+            fp = os.path.join(self.storage_dir, self.KW_FEATURE, fd + self.SUFFIX_FEATURE) # TBD
             os.remove(fp)
-            fp = os.path.join(self.storage_dir, "metadata", fd + ".json")
+            fp = os.path.join(self.storage_dir, self.KW_METADATA, fd + self.SUFFIX_METADATA)
             os.remove(fp)
 
             with open(self.storage_dir+"/root.txt", "r+") as file:
                 text = file.read()
 
-                if text == '':
+                if text == "":
                     return False
                 
                 tree = btree.Binary_search_tree(btree.deserialize(text))
@@ -238,19 +293,19 @@ class StorageEngine(BaseStorageEngine):
 
 
     def update_metadata(self, index:str, target_metadata:dict):
-        '''
+        """
         target_metadata: dict
-        '''
+        """
 
         try:
             fd = self.locate_id(index)
-            fp = os.path.join(self.storage_dir, "metadata", fd + ".json")
+            fp = os.path.join(self.storage_dir, self.KW_METADATA, fd + self.SUFFIX_METADATA)
 
             with open(fp, "r") as f:
                 metadata = json.load(f)
-                if metadata['index'] != target_metadata['index']:
+                if metadata["index"] != target_metadata["index"]:
                     return False # index key is immutable
-                if metadata['c_at'] != target_metadata['c_at']:
+                if metadata["c_at"] != target_metadata["c_at"]:
                     return False # c_at key is immutable
                 metadata.update(target_metadata)
 
@@ -301,7 +356,7 @@ class StorageEngine(BaseStorageEngine):
         # open root file, reconstruct bstree
         with open(self.storage_dir+"/root.txt", "r+") as file:
             text = file.read()
-            if text != '':
+            if text != "":
                 tree = btree.Binary_search_tree(btree.deserialize(text))
             else: 
                 tree = btree.Binary_search_tree()
@@ -340,7 +395,7 @@ class StorageEngine(BaseStorageEngine):
 
         # if new node, insert into bstree
         if tree.search(tree.root, index) == None:
-            file_path = str(fd_path + '/' + index)
+            file_path = str(fd_path + "/" + index)
             tree.insert(index, file_path)
 
         # rewrite root file
@@ -354,11 +409,12 @@ class StorageEngine(BaseStorageEngine):
 
         return file_path
 
-'''index table
 
-'folder': [folder names 0-100],
-'0':['index', 'index2'...maybe100]
+"""index table
+
+"folder": [folder names 0-100],
+"0":["index", "index2"...maybe100]
 ...
-'100':[recent pointer]
+"100":[recent pointer]
 index = folder+uuid
-'''
+"""
