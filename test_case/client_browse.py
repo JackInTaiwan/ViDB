@@ -1,7 +1,14 @@
-import socket
+import io
 import os
 import sys
 import json
+import base64
+import socket
+import cv2
+import numpy as np
+
+from PIL import Image
+
 
 
 try:
@@ -11,6 +18,9 @@ except socket.error as error:
     sys.stderr.write(str(error))
     exit(1)
 
+
+
+# operation 1: browse_by_random
 msg = {
     "request_type": "browse_by_random",
     "body": {
@@ -18,12 +28,14 @@ msg = {
     }
 }
 
+# operation 2: browse_by_cluster
 # msg = {
 #     "request_type": "browse_by_cluster",
 #     "body": {
 #         "num_inst": 10
 #     }
 # }
+
 
 
 ### Encode the message
@@ -33,9 +45,12 @@ encoded_msg = byte_
 
 socket_.send(encoded_msg)
 
+
+### Receive the response
 str_ = ""
 while response:=socket_.recv(1024):
     str_ += response.decode()
+socket_.close()
 
 
 ### Decode the message
