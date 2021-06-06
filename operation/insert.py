@@ -1,3 +1,4 @@
+import io
 import os
 import logging
 import cv2
@@ -7,7 +8,6 @@ from PIL import Image
 from . import register_as_operation
 from variable import operation as OP
 from visual_model.function import extract_feature
-import io
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +119,6 @@ def image_to_string(img, filename):
     #img: should be a PIL image
     output = io.BytesIO()
     img.save(output, format="png")
-    image_as_string = output.getvalue()
+    image_as_bytes = output.getvalue()
     
-    return image_as_string
+    return image_as_bytes

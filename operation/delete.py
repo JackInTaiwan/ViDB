@@ -34,6 +34,31 @@ def delete_one_by_id(body=None, storage_engine=None):
         }
 
 
+@register_as_operation(name=OP.DELETE_ALL)
+def delete_all(body=None, storage_engine=None):
+
+    try:
+        result = storage_engine.clean_storage()
+
+        if result:
+            return {
+                "success": True,
+                "body": {}
+            }
+        else:
+            return {
+                "success": False,
+                "body": {}
+            }
+
+    except Exception as e:
+        logger.error(e)
+
+        return {
+            "success": False,
+            "body": {}
+        }
+
 @register_as_operation(name=OP.DELETE_MANY_BY_IDS)
 def delete_many_by_ids(body=None, storage_engine=None):
     target_index_list = body["target_index_list"]

@@ -3,13 +3,19 @@ import random
 import numpy as np
 import torch
 from torch.nn.functional import avg_pool2d
+import io
+import base64
+
+from PIL import Image
 from sklearn.cluster import KMeans
 from sklearn.metrics import pairwise_distances_argmin_min
 
 from . import register_as_operation
 from variable import operation as OP
 
+
 logger = logging.getLogger(__name__)
+
 
 
 
@@ -67,11 +73,12 @@ def browse(num_inst=30, mode="random", storage_engine=None):
     k = min(num_inst, len(index_list))
     
     if mode == "random":
-        return random.sample(index_list, k)
+        selected_idxs = random.sample(index_list, k)    
+            
     
     elif mode == "cluster":
         for i, index in enumerate(index_list):
-            _, _, feature, _ = storage_engine.read_one(index, 'features')
+            _, _, feature, _ = storage_engine.read_one(index, "features")
             feature = feature[-1]                           # (1, 2048, 7, 7)
             feature = avg_pool2d(feature, feature.size(-1)) # (1, 2048, 1, 1)
             feature = feature.view(1, -1)                   # (1, 2048)
@@ -84,5 +91,14 @@ def browse(num_inst=30, mode="random", storage_engine=None):
         features = features.cpu().numpy()
         kmeans = KMeans(n_clusters=k).fit(features)
         closest_idx, _ = pairwise_distances_argmin_min(kmeans.cluster_centers_, features)
-        selected_data = np.array(index_list)[closest_idx].tolist()
-        return selected_data
+        selected_idxs = np.array(index_list)[closest_idx].tolist()
+
+    
+    _, thumbnail_bytes_imgs, _, _ = storage_engine.read_many(selected_idxs, mode="thumbnail")
+
+    output = {}
+    
+    for idx, img in zip(selected_idxs, thumbnail_bytes_imgs):
+        output[idx] = base64.b64encode(img).decode()
+
+    return output

@@ -1,3 +1,4 @@
+import base64
 import logging
 
 from . import register_as_operation
@@ -10,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 @register_as_operation(name=OP.QUERY_NEAREST_BY_CONTENT)
 def query_nearest_by_content(body=None, storage_engine=None):
-    target_index, num_inst = body["target_index"], body["num_inst"]
+    target_index, num_inst, return_origin_size = body["target_index"], body["num_inst"], body["return_origin_size"]
 
     try:
-        result = find_instance_by_mode(target_index, num_inst, True, "content", storage_engine)
+        result = find_instance_by_mode(target_index, num_inst, True, "content", storage_engine, return_origin_size)
 
         return {
             "success": True,
@@ -31,10 +32,10 @@ def query_nearest_by_content(body=None, storage_engine=None):
 
 @register_as_operation(name=OP.QUERY_NEAREST_BY_STYLE)
 def query_nearest_by_style(body=None, storage_engine=None):
-    target_index, num_inst = body["target_index"], body["num_inst"]
+    target_index, num_inst, return_origin_size = body["target_index"], body["num_inst"], body["return_origin_size"]
 
     try:
-        result = find_instance_by_mode(target_index, num_inst, True, "style", storage_engine)
+        result = find_instance_by_mode(target_index, num_inst, True, "style", storage_engine, return_origin_size)
 
         return {
             "success": True,
@@ -52,10 +53,10 @@ def query_nearest_by_style(body=None, storage_engine=None):
 
 @register_as_operation(name=OP.QUERY_FARTHEST_BY_CONTENT)
 def query_farthest_by_content(body=None, storage_engine=None):
-    target_index, num_inst = body["target_index"], body["num_inst"]
+    target_index, num_inst, return_origin_size = body["target_index"], body["num_inst"], body["return_origin_size"]
 
     try:
-        result = find_instance_by_mode(target_index, num_inst, False, "content", storage_engine)
+        result = find_instance_by_mode(target_index, num_inst, False, "content", storage_engine, return_origin_size)
 
         return {
             "success": True,
@@ -73,10 +74,10 @@ def query_farthest_by_content(body=None, storage_engine=None):
 
 @register_as_operation(name=OP.QUERY_FARTHEST_BY_STYLE)
 def query_farthest_by_style(body=None, storage_engine=None):
-    target_index, num_inst = body["target_index"], body["num_inst"]
+    target_index, num_inst, return_origin_size = body["target_index"], body["num_inst"], body["return_origin_size"]
 
     try:
-        result = find_instance_by_mode(target_index, num_inst, False, "style", storage_engine)
+        result = find_instance_by_mode(target_index, num_inst, False, "style", storage_engine, return_origin_size)
 
         return {
             "success": True,
@@ -94,10 +95,10 @@ def query_farthest_by_style(body=None, storage_engine=None):
 
 @register_as_operation(name=OP.QUERY_BY_TAG_ALL)
 def query_by_tag_all(body=None, storage_engine=None):
-    target_index, num_inst, tags = body["target_index"], body["num_inst"], body["tags"]
+    target_index, num_inst, tags, return_origin_size = body["target_index"], body["num_inst"], body["tags"], body["return_origin_size"]
 
     try:
-        result = find_instance_by_tag(target_index, num_inst, "all", tags, storage_engine)
+        result = find_instance_by_tag(target_index, num_inst, "all", tags, storage_engine, return_origin_size)
 
         return {
             "success": True,
@@ -115,10 +116,10 @@ def query_by_tag_all(body=None, storage_engine=None):
 
 @register_as_operation(name=OP.QUERY_BY_TAG_PARTIAL)
 def query_by_tag_partial(body=None, storage_engine=None):
-    target_index, num_inst, tags = body["target_index"], body["num_inst"], body["tags"]
+    target_index, num_inst, tags, return_origin_size = body["target_index"], body["num_inst"], body["tags"], body["return_origin_size"]
 
     try:
-        result = find_instance_by_tag(target_index, num_inst, "partial", tags, storage_engine)
+        result = find_instance_by_tag(target_index, num_inst, "partial", tags, storage_engine, return_origin_size)
 
         return {
             "success": True,
@@ -136,10 +137,10 @@ def query_by_tag_partial(body=None, storage_engine=None):
 
 @register_as_operation(name=OP.QUERY_RANGE_BY_CONTENT)
 def query_range_by_content(body=None, storage_engine=None):
-    group_index, num_inst = body["group_index"], body["num_inst"]
+    group_index, num_inst, return_origin_size = body["group_index"], body["num_inst"], body["return_origin_size"]
 
     try:
-        result = find_instance_by_range(group_index, num_inst, "content", storage_engine)
+        result = find_instance_by_range(group_index, num_inst, "content", storage_engine, return_origin_size)
 
         return {
             "success": True,
@@ -157,10 +158,10 @@ def query_range_by_content(body=None, storage_engine=None):
 
 @register_as_operation(name=OP.QUERY_RANGE_BY_STYLE)
 def query_range_by_style(body=None, storage_engine=None):
-    group_index, num_inst = body["group_index"], body["num_inst"]
+    group_index, num_inst, return_origin_size = body["group_index"], body["num_inst"], body["return_origin_size"]
 
     try:
-        result = find_instance_by_range(group_index, num_inst, "style", storage_engine)
+        result = find_instance_by_range(group_index, num_inst, "style", storage_engine, return_origin_size)
 
         return {
             "success": True,
@@ -176,7 +177,7 @@ def query_range_by_style(body=None, storage_engine=None):
         }
 
 
-def find_instance_by_mode(target_index, num_inst, nearest=True, mode="content", storage_engine=None):
+def find_instance_by_mode(target_index, num_inst, nearest=True, mode="content", storage_engine=None, return_origin_size=False):
     """Query the most similar/dissimilar instances
 
     Args:
@@ -212,10 +213,20 @@ def find_instance_by_mode(target_index, num_inst, nearest=True, mode="content", 
     for i in range(n):
         selected.append(losses[i][0])
 
-    return selected
+    if return_origin_size:
+        img_bytes, _, _, _ = storage_engine.read_many(selected, mode ='image')
+    else:
+        _, img_bytes, _, _ = storage_engine.read_many(selected, mode ='thumbnail')
+    
+    output = {}
+    
+    for idx, img in zip(selected, img_bytes):
+        output[idx] = base64.b64encode(img).decode()
+
+    return output
 
 
-def find_instance_by_tag(target_index, num_inst, mode, tags, storage_engine=None):
+def find_instance_by_tag(target_index, num_inst, mode, tags, storage_engine=None, return_origin_size=False):
     """Query the most similar instances given tags
 
     Args:
@@ -261,10 +272,20 @@ def find_instance_by_tag(target_index, num_inst, mode, tags, storage_engine=None
     for i in range(n):
         selected.append(losses[i][0])
 
-    return selected
+    if return_origin_size:
+        img_bytes, _, _, _ = storage_engine.read_many(selected, mode ='image')
+    else:
+        _, img_bytes, _, _ = storage_engine.read_many(selected, mode ='thumbnail')
+    
+    output = {}
+    
+    for idx, img in zip(selected, img_bytes):
+        output[idx] = base64.b64encode(img).decode()
+
+    return output
 
 
-def find_instance_by_range(group_index, num_inst=0, mode="content", storage_engine=None):
+def find_instance_by_range(group_index, num_inst=0, mode="content", storage_engine=None, return_origin_size=False):
     """Query similar instances given a group of instances
 
     Args:
@@ -309,4 +330,14 @@ def find_instance_by_range(group_index, num_inst=0, mode="content", storage_engi
         for i in range(n):
             selected.append(losses[i][0])
 
-    return selected
+    if return_origin_size:
+        img_bytes, _, _, _ = storage_engine.read_many(selected, mode ='image')
+    else:
+        _, img_bytes, _, _ = storage_engine.read_many(selected, mode ='thumbnail')
+    
+    output = {}
+    
+    for idx, img in zip(selected, img_bytes):
+        output[idx] = base64.b64encode(img).decode()
+
+    return output
