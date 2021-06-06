@@ -5,8 +5,8 @@ import time
 import torch
 import logging
 import glob
-import btree as btree
 
+from . import btree
 from ..base import BaseStorageEngine
 
 logger = logging.getLogger(__name__)
@@ -29,23 +29,9 @@ features: saved as .pt/tensor
 # reallocation
     1. 當沒有資料夾，開啟一個新的，並建立storage_table.json, root.txt，新增資料夾名稱為key，value初始值為0，每新增一筆資料增加一
     2. 將資料存入或刪除後，修改storage_table.json, root.txt
-    3. 當資料夾滿了(default:100)，開啟下一個新資料夾
+    3. 當資料夾滿了 (self.storage_table_max_buffer)，開啟下一個新資料夾
         
 """
-### Debug區 ###
-# index = "63fdbd9a5fd24e95b021bcd8f649c07c" 
-# image = b"iVBORw0KGgoAAAANSUhEUgAABoIAAAaCCAYAAAABZu+EAAAqOElEQVR42uzBAQEAAACAkP6v7ggK"
-# thumbnail = b"iVBORw0KGgoAAAANSUhEUgAABoIAAAaCCAYAAAABZu+EAAAqOElEQVR42uzBAQEAAACAkP6v7ggK"
-# features = []
-# metadata = {"tag":None, "file_type":".png", "file_name":"01"}
-# st = StorageEngine()
-# st.storage_dir = r"C:\Users\Asus\Documents\GitHub\ViDB\storage_engine\storage"
-# st.init_storage()
-# for i in range(100):
-#     st.create_one(image, thumbnail, features, metadata)
-# st.read_all_idx()
-# st.delete_one("0079112b083242ff9b42d5fad4bc6738")
-# st.read_one("08aaec672da9415ea4b1d389800e3c28")
 
 
 
@@ -60,8 +46,12 @@ class StorageEngine(BaseStorageEngine):
     SUFFIX_METADATA = ".json"
     SUFFIX_FEATURE = ".pt"
 
+    STORAGE_ENTRY_FILE = "storage_tree_entry.json"
+    STORAGE_TREE_FILE = "storage_tree_body.txt"
+
     def __init__(self):
         self.storage_dir = os.getenv("storage_engine.storage_dir")
+        self.storage_table_max_buffer = int(os.getenv("storage_engine.storage_table_max_buffer"))
 
 
     def init_storage(self):
@@ -71,11 +61,9 @@ class StorageEngine(BaseStorageEngine):
             os.makedirs(os.path.join(self.storage_dir, self.KW_THUMBNAIL))
             os.makedirs(os.path.join(self.storage_dir, self.KW_METADATA))
             os.makedirs(os.path.join(self.storage_dir, self.KW_FEATURE))
-            fd = os.open(os.path.join(self.storage_dir, "index.json"), os.O_CREAT)
+            fd = os.open(os.path.join(self.storage_dir, self.STORAGE_ENTRY_FILE), os.O_CREAT) 
             os.close(fd)
-            fd = os.open(os.path.join(self.storage_dir, "storage_table.json"), os.O_CREAT) 
-            os.close(fd)
-            fd = os.open(os.path.join(self.storage_dir, "root.txt"), os.O_CREAT) 
+            fd = os.open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), os.O_CREAT) 
             os.close(fd)
 
 
@@ -86,9 +74,6 @@ class StorageEngine(BaseStorageEngine):
             files = glob.glob(folder_path)
             for f in files:
                 os.remove(f)
-        os.remove(os.path.join(self.storage_dir, "index.json"))
-        fd = os.open(os.path.join(self.storage_dir, "index.json"), os.O_CREAT) 
-        os.close(fd)
         
         logger.info("Successfully clean all data.")
 
@@ -213,7 +198,7 @@ class StorageEngine(BaseStorageEngine):
 
 
     def read_all_idx(self):
-        with open(self.storage_dir +"/root.txt", "r") as f:
+        with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "r") as f:
             text = f.read()
 
         try:
@@ -237,7 +222,7 @@ class StorageEngine(BaseStorageEngine):
             fp = os.path.join(self.storage_dir, self.KW_METADATA, fd + self.SUFFIX_METADATA)
             os.remove(fp)
 
-            with open(self.storage_dir+"/root.txt", "r+") as file:
+            with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "r+") as file:
                 text = file.read()
 
                 if text == "":
@@ -330,22 +315,21 @@ class StorageEngine(BaseStorageEngine):
 
     def update_storage_table(self, file_path, delete=False):
         fd_path = file_path.split("/")[0]
-        with open(self.storage_dir+"/storage_table.json", "r+") as file:
-        # with open(r"C:\Users\Asus\Documents\GitHub\ViDB\storage_engine\storage\table.json", "r+") as file:            
-            data = json.load(file)
+
+        with open(os.path.join(self.storage_dir, self.STORAGE_ENTRY_FILE), "r+") as f:
+            data = json.load(f)
 
             if delete:
                 # updata table file
                 data.update({fd_path:data[fd_path]-1})
-                file.seek(0) # relocate the pointer
-                json.dump(data, file)
+                f.seek(0) # relocate the pointer
+                json.dump(data, f)
 
             else:
                 # updata table file
-                            # updata table file
                 data.update({fd_path:data[fd_path]+1})
-                file.seek(0) # relocate the pointer
-                json.dump(data, file)
+                f.seek(0) # relocate the pointer
+                json.dump(data, f)
 
 
     def locate_id(self, index=None): 
@@ -354,7 +338,7 @@ class StorageEngine(BaseStorageEngine):
             index = self.generate_id()
         
         # open root file, reconstruct bstree
-        with open(self.storage_dir+"/root.txt", "r+") as file:
+        with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "r+") as file:
             text = file.read()
             if text != "":
                 tree = btree.Binary_search_tree(btree.deserialize(text))
@@ -368,13 +352,13 @@ class StorageEngine(BaseStorageEngine):
 
 
         # if new node, create new file path
-        with open(self.storage_dir+"/storage_table.json", "r+") as file:
+        with open(os.path.join(self.storage_dir, self.STORAGE_ENTRY_FILE), "r+") as f:
             fd_path = -1 # 初始值
 
             try:
-                data = json.load(file)
+                data = json.load(f)
                 for k, v in data.items():
-                    if v < 100: # 超過一百個開新資料夾
+                    if v < self.storage_table_max_buffer: # 超過一百個開新資料夾
                         fd_path = k # 將要輸入的資料夾
                         break
             
@@ -383,15 +367,14 @@ class StorageEngine(BaseStorageEngine):
             
             if fd_path == -1: # 代表前面資料夾已滿
                 # create new folder
-                # fd_path = str(uuid.uuid4().hex)
-                fd_path = str(self.generate_id())
+                fd_path = self.generate_id()
                 os.makedirs(os.path.join(self.storage_dir, "image", fd_path))
                 os.makedirs(os.path.join(self.storage_dir, "thumbnail", fd_path))
                 os.makedirs(os.path.join(self.storage_dir, "features", fd_path))
                 os.makedirs(os.path.join(self.storage_dir, "metadata", fd_path))
                 data.update({fd_path:0})
-                file.seek(0) # relocate the pointer
-                json.dump(data, file)
+                f.seek(0) # relocate the pointer
+                json.dump(data, f)
 
         # if new node, insert into bstree
         if tree.search(tree.root, index) == None:
@@ -399,9 +382,9 @@ class StorageEngine(BaseStorageEngine):
             tree.insert(index, file_path)
 
         # rewrite root file
-        with open(self.storage_dir+"/root.txt", "r+") as file:
-            file.seek(0)
-            file.write(btree.serialize(tree.root))
+        with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "r+") as f:
+            f.seek(0)
+            f.write(btree.serialize(tree.root))
         
 
         # mode: without hierarchial structure

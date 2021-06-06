@@ -1,14 +1,7 @@
-from collections import deque 
+from collections import deque
+from random import randint
 
-### Debug區 ###
-# tree = btree.Binary_search_tree()
-# tree = btree.fill_tree(tree)
-# tree.print_tree(path=True)
-# tree.search(tree.root, 9)
-# tree.deleteNode(tree.root, 33)
-# data = btree.serialize(tree.root)
-# ntree = btree.Binary_search_tree(btree.deserialize(data))
-# ntree.print_tree()
+
 
 class Node:
     def __init__(self, value=None, path=None):
@@ -17,9 +10,12 @@ class Node:
         self.left_child = None #smaller
         self.right_child = None #greater
 
+
+
 class Binary_search_tree:
     def __init__(self, root = None):
         self.root = root
+
 
     def insert(self, value, path):
         #判斷tree是否為空
@@ -27,6 +23,7 @@ class Binary_search_tree:
             self.root = Node(value, path)
         else:
             self._insert(value, path, self.root)
+
 
     def _insert(self, value, path, cur_node):
         if value < cur_node.value:
@@ -45,14 +42,16 @@ class Binary_search_tree:
         else:
             print("This value has existed")
 
+
     def print_tree(self, path = False):
         lst = []
-        if self.root!=None:
+        if self.root != None:
         	self._print_tree(self.root, path, lst)
         return lst
 
+
     def _print_tree(self,cur_node: Node, path, lst:list):
-        if cur_node!=None:
+        if cur_node != None:
             self._print_tree(cur_node.left_child, path, lst)
             if path:
         	    lst.append([str(cur_node.value), str(cur_node.path)])
@@ -62,6 +61,7 @@ class Binary_search_tree:
 
         return lst
     
+
     def search(self, cur_node:Node, key): # search start from tree root
         # Base Cases: root is null or key is present at root
         if cur_node is None or cur_node.value == key:
@@ -73,6 +73,7 @@ class Binary_search_tree:
     
         # Key is smaller than root's key
         return self.search(cur_node.left_child,key)
+        
         
     def deleteNode(self, cur_node:Node, key):    
         # Base Case
@@ -135,24 +136,27 @@ class Binary_search_tree:
         return cur_node
 
 
+
 def fill_tree(tree, num_elems=10, max_int=50):
-    from random import randint
     for _ in range(num_elems): #10個 value
         cur_elem = randint(0, max_int) #隨機0~50(不含50)的值
         cur_path = randint(0, max_int)
         tree.insert(cur_elem, cur_path)
     return tree
 
+
 def serialize(root: Node) -> str:
-    """Encodes a tree to a single string. """
+    """Encode a tree to a single string."""
     if not root:
         return '^'
     return str(root.value)+','+str(root.path) + ' ' + serialize(root.left_child) + ' ' + serialize(root.right_child)
 
+
 def deserialize(data: str) -> Node:
-    """Decodes your encoded data to tree. """
+    """Decode your encoded data to a tree."""
     data = deque(data.split(' '))
     return _deserialize(data)
+
 
 def _deserialize(data):
     v = data.popleft()
