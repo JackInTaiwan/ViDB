@@ -60,10 +60,9 @@ class BaseStorageEngine(metaclass=abc.ABCMeta):
 
 
     @abc.abstractmethod
-    def storage_reconstruct(self): # TBD: how to relocate files
+    def locate_id(self, index): # TBD: how to relocate files
         return NotImplemented
 
-
     @abc.abstractmethod
-    def locate_id(self, index): # TBD: how to relocate files
+    def update_storage_table(self, file_path, delete=False):
         return NotImplemented
