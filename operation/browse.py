@@ -99,6 +99,6 @@ def browse(num_inst=30, mode="random", storage_engine=None):
     output = {}
     
     for idx, img in zip(selected_idxs, thumbnail_bytes_imgs):
-        output[idx] = str(base64.b64encode(img))
+        output[idx] = base64.b64encode(img).decode()
 
     return output

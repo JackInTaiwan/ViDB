@@ -221,7 +221,7 @@ def find_instance_by_mode(target_index, num_inst, nearest=True, mode="content", 
     output = {}
     
     for idx, img in zip(selected, img_bytes):
-        output[idx] = str(base64.b64encode(img))
+        output[idx] = base64.b64encode(img).decode()
 
     return output
 
@@ -280,7 +280,7 @@ def find_instance_by_tag(target_index, num_inst, mode, tags, storage_engine=None
     output = {}
     
     for idx, img in zip(selected, img_bytes):
-        output[idx] = str(base64.b64encode(img))
+        output[idx] = base64.b64encode(img).decode()
 
     return output
 
@@ -338,6 +338,6 @@ def find_instance_by_range(group_index, num_inst=0, mode="content", storage_engi
     output = {}
     
     for idx, img in zip(selected, img_bytes):
-        output[idx] = str(base64.b64encode(img))
+        output[idx] = base64.b64encode(img).decode()
 
     return output
