@@ -275,23 +275,48 @@ class StorageEngine(BaseStorageEngine):
 
     def update_one(self, index, metadata):
         result = self.update_metadata(index, metadata)
-        return result
+
+        if result["success"]:
+            return {
+                "success": True,
+                "updated_data": {result["updated_index"]: result["updated_data"]}
+            }
+
+        else:
+            return {
+                "success": False
+            }
     
 
     def update_many(self, index:list, metadata:list):
         if (len(index) != len(metadata)):
-            return False
+            return {
+                "success": False,
+            }
+            
         try:
+            updated_data = {}
             for index_, metadata_ in zip(index, metadata):
-                result = self.update_metadata(index_, metadata_)
-                if not result:
+                update_result = self.update_metadata(index_, metadata_)
+                if not update_result["success"]:
                     # abort the transation
-                    return False
-            return True
+                    return {
+                        "success": False,
+                    }
+                updated_data[update_result["updated_index"]] = update_result["updated_data"]
+
+            return {
+                "success": True,
+                "updated_data": updated_data
+            }
 
         except Exception as e:
             logger.error(e)
-            return False
+
+            return {
+                "success": False,
+                "body": {}
+            }
 
 
     def update_metadata(self, index:str, target_metadata:dict):
@@ -305,20 +330,35 @@ class StorageEngine(BaseStorageEngine):
 
             with open(fp, "r") as f:
                 metadata = json.load(f)
-                if metadata["index"] != target_metadata["index"]:
-                    return False # index key is immutable
-                if metadata["c_at"] != target_metadata["c_at"]:
-                    return False # c_at key is immutable
+
+                # index key is immutable
+                if "index" in target_metadata.keys() and metadata["index"] != target_metadata["index"]:
+                    return {
+                        "success": False
+                    }
+
+                # c_at key is immutable
+                if "c_at" in target_metadata.keys() and metadata["c_at"] != target_metadata["c_at"]:
+                    return {
+                        "success": False
+                    }
+
                 metadata.update(target_metadata)
 
             with open(fp, "w") as f:
                 json.dump(metadata, f)
         
-            return True
+            return {
+                "success": True,
+                "updated_index": index,
+                "updated_data": metadata
+            }
 
         except Exception as e:
             logger.error(e)
-            return False
+            return {
+                "success": False
+            }
 
 
     def generate_id(self):
