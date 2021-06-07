@@ -97,7 +97,7 @@ class StorageEngine(BaseStorageEngine):
 
         # generate unique index
         index = self.generate_id()
-        fd = self.locate_id(index)
+        fd = self.locate_id(index, do_insert_new=True)
 
         try:
             # save image to...
@@ -167,8 +167,7 @@ class StorageEngine(BaseStorageEngine):
                 f = os.open(fp, os.O_RDONLY)
                 image = str(os.read(f, f))
                 os.close(f)
-                """
-                
+                """       
             
             # retrieve thumbnail object as string
             if ("all" in mode) | ("thumbnail" in mode):
@@ -181,7 +180,6 @@ class StorageEngine(BaseStorageEngine):
                 thumbnail = str(os.read(f, f))
                 os.close(f)
                 """
-                
 
             # retrieve features object as ...
             if ("all" in mode) | ("features" in mode):
@@ -195,6 +193,7 @@ class StorageEngine(BaseStorageEngine):
                     metadata = json.load(file)
 
         except Exception as e:
+            logger.error(e)
             raise e
 
         return image, thumbnail, features, metadata # TBD: how to return independently
@@ -226,7 +225,7 @@ class StorageEngine(BaseStorageEngine):
             return None
 
 
-    def delete_one(self, index): 
+    def delete_one(self, index):
         fd = self.locate_id(index)
 
         try:
@@ -239,18 +238,19 @@ class StorageEngine(BaseStorageEngine):
             fp = os.path.join(self.storage_dir, self.KW_METADATA, fd + self.SUFFIX_METADATA)
             os.remove(fp)
 
-            with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "r+") as file:
-                text = file.read()
+            with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "r") as f:
+                text = f.read()
 
                 if text == "":
                     return False
                 
                 tree = btree.Binary_search_tree(btree.deserialize(text))
                 tree.deleteNode(tree.root, index)
-                file.seek(0)
-                file.write(btree.serialize(tree.root))
 
-            self.update_storage_table(fd, delete = True)
+            with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "w") as f:
+                f.write(btree.serialize(tree.root))
+
+            self.update_storage_table(fd, delete=True)
             return True
 
         except Exception as e:
@@ -389,11 +389,10 @@ class StorageEngine(BaseStorageEngine):
                 json.dump(data, f)
 
 
-    def locate_id(self, index=None): 
-        if index == None:
-            # generate unique index
-            index = self.generate_id()
-        
+    def locate_id(self, index=None, do_insert_new=False):
+        if index is None:
+            return None
+
         # open root file, reconstruct bstree
         with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "r+") as file:
             text = file.read()
@@ -402,52 +401,54 @@ class StorageEngine(BaseStorageEngine):
             else: 
                 tree = btree.Binary_search_tree()
 
-
-        # if node exist return file path
-        if tree.search(tree.root, index) != None: # node existed
+        if tree.search(tree.root, index) is not None:
             return tree.search(tree.root, index).path
 
+        elif not do_insert_new:
+            logger.error("Index not found: '{}'".format(index))
+            return None
 
-        # if new node, create new file path
-        with open(os.path.join(self.storage_dir, self.STORAGE_ENTRY_FILE), "r+") as f:
-            fd_path = -1 # 初始值
+        else:
+            # if new node, create new file path
+            with open(os.path.join(self.storage_dir, self.STORAGE_ENTRY_FILE), "r+") as f:
+                fd_path = -1 # 初始值
 
-            try:
-                data = json.load(f)
-                for k, v in data.items():
-                    if v < self.storage_page_max_buffer: # 超過一百個開新資料夾
-                        fd_path = k # 將要輸入的資料夾
-                        break
+                try:
+                    data = json.load(f)
+                    for k, v in data.items():
+                        if v < self.storage_page_max_buffer: # 超過一百個開新資料夾
+                            fd_path = k # 將要輸入的資料夾
+                            break
+                
+                except: # create new storage_table file
+                    data = {}
+                
+                if fd_path == -1: # 代表前面資料夾已滿
+                    # create new folder
+                    fd_path = self.generate_id()
+                    os.makedirs(os.path.join(self.storage_dir, "image", fd_path))
+                    os.makedirs(os.path.join(self.storage_dir, "thumbnail", fd_path))
+                    os.makedirs(os.path.join(self.storage_dir, "features", fd_path))
+                    os.makedirs(os.path.join(self.storage_dir, "metadata", fd_path))
+                    data.update({fd_path:0})
+                    f.seek(0) # relocate the pointer
+                    json.dump(data, f)
+
+            # if new node, insert into bstree
+            if tree.search(tree.root, index) == None:
+                file_path = str(fd_path + "/" + index)
+                tree.insert(index, file_path)
+
+            # rewrite root file
+            with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "r+") as f:
+                f.seek(0)
+                f.write(btree.serialize(tree.root))
             
-            except: # create new storage_table file
-                data = {}
-            
-            if fd_path == -1: # 代表前面資料夾已滿
-                # create new folder
-                fd_path = self.generate_id()
-                os.makedirs(os.path.join(self.storage_dir, "image", fd_path))
-                os.makedirs(os.path.join(self.storage_dir, "thumbnail", fd_path))
-                os.makedirs(os.path.join(self.storage_dir, "features", fd_path))
-                os.makedirs(os.path.join(self.storage_dir, "metadata", fd_path))
-                data.update({fd_path:0})
-                f.seek(0) # relocate the pointer
-                json.dump(data, f)
 
-        # if new node, insert into bstree
-        if tree.search(tree.root, index) == None:
-            file_path = str(fd_path + "/" + index)
-            tree.insert(index, file_path)
+            # mode: without hierarchial structure
+            # file_path = index
 
-        # rewrite root file
-        with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "r+") as f:
-            f.seek(0)
-            f.write(btree.serialize(tree.root))
-        
-
-        # mode: without hierarchial structure
-        # file_path = index
-
-        return file_path
+            return file_path
 
 
 """index table
