@@ -2,6 +2,7 @@ import io
 import os
 import logging
 import cv2
+import base64
 import numpy as np
 
 from PIL import Image
@@ -130,6 +131,7 @@ def insert_one_byte(bytes, metadata, storage_engine=None):
     
     #decode to PIL
     # Reading image.txt to decode it as image
+    bytes = base64.b64decode(bytes)
     img_PIL = Image.open(io.BytesIO(bytes))
 
     # PIL image to numpy

@@ -50,7 +50,7 @@ msg = {
 #     }
 # }
 
-# operation 3: insert_one_by_bytes
+# operation 3: insert_one_by_byte
 
 txt_path = "../data/test/bytes/art_painting_dog_030.txt"
 with open(txt_path, 'rb') as myfile:
@@ -61,14 +61,14 @@ f = open(meta_path, "r")
 metaData = json.load(f)
 
 msg = {
-    "request_type": "insert_one_by_bytes",
+    "request_type": "insert_one_by_byte",
     "body": {
         "bytes": base64.b64encode(image_bytes).decode(),
         "metadata": metaData
     }
 }
 
-# operation 4: insert_many_by_bytes
+# operation 4: insert_many_by_byte
 '''
 bytes_list = []
 bytes_dir = "../data/test/bytes"
@@ -82,7 +82,7 @@ f = open(meta_path, "r")
 metaData = json.load(f)
 
 msg = {
-    "request_type": "insert_many_by_bytes",
+    "request_type": "insert_many_by_byte",
     "body": {
         "bytes_list": bytes_list,
         "metadata": metaData
