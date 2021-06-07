@@ -23,27 +23,27 @@ class Controller(socketserver.BaseRequestHandler):
 
     def handle(self):
         try:
-            msg = self.request.recv(self.max_reception_byte+1)
-            
-            if len(msg) > self.max_reception_byte:
-                response = {"success": False, "error_msg": EM.EXCEL_MAX_RECEPTION_BYTE}
+            msg = bytes()
+            decoded_msg = None
+
+            while msg_ := self.request.recv(self.max_reception_byte):
+                msg += msg_
+                decoded_msg = self.msg_resolver.decode(msg)
+                if decoded_msg: break
+
+            data = self.msg_resolver.parse(decoded_msg)
+
+            if not data:
+                response = {"success": False, "error_msg": EM.CANNOT_PARSE_MSG_BODY}
                 encoded_response = self.msg_resolver.encode(response)
                 self.request.send(encoded_response)
-            else:
-                decoded_msg = self.msg_resolver.decode(msg)
-                data = self.msg_resolver.parse(decoded_msg)
 
-                if not data:
-                    response = {"success": False, "error_msg": EM.CANNOT_PARSE_MSG_BODY}
-                    encoded_response = self.msg_resolver.encode(response)
-                    self.request.send(encoded_response)
-
-                result = OPERATION[data["request_type"]](body=data["body"], storage_engine=self.storage_engine)
-                encoded_result = self.msg_resolver.encode(result)
-                
-                # Send the result back
-                self.request.send(encoded_result)
-                logger.info("[request_type: {}] [status: success] [byte: {}]".format(data["request_type"], len(msg)))
+            result = OPERATION[data["request_type"]](body=data["body"], storage_engine=self.storage_engine)
+            encoded_result = self.msg_resolver.encode(result)
+            
+            # Send the result back
+            self.request.send(encoded_result)
+            logger.info("[request_type: {}] [status: success] [byte: {}]".format(data["request_type"], len(msg)))
 
         finally:
             # Close the session
