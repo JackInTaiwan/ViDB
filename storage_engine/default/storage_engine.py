@@ -1,10 +1,11 @@
+import logging
 import uuid
 import os
 import json
 import time
-import torch
-import logging
 import glob
+import shutil
+import torch
 
 from . import btree
 from ..base import BaseStorageEngine
@@ -70,10 +71,19 @@ class StorageEngine(BaseStorageEngine):
     def clean_storage(self):
         folders = [self.KW_IMAGE, self.KW_THUMBNAIL, self.KW_METADATA, self.KW_FEATURE]
         for f in folders:
-            folder_path = os.path.join(self.storage_dir,f,"*")
-            files = glob.glob(folder_path)
-            for f in files:
-                os.remove(f)
+            folder_path = os.path.join(self.storage_dir, f, "*")
+            dirs = glob.glob(folder_path)
+            for dir_ in dirs:
+                shutil.rmtree(dir_)
+
+        os.remove(os.path.join(self.storage_dir, self.STORAGE_ENTRY_FILE))
+        os.remove(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE))
+
+        fd = os.open(os.path.join(self.storage_dir, self.STORAGE_ENTRY_FILE), os.O_CREAT) 
+        os.close(fd)
+
+        fd = os.open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), os.O_CREAT) 
+        os.close(fd)
         
         logger.info("Successfully clean all data.")
 
@@ -127,8 +137,6 @@ class StorageEngine(BaseStorageEngine):
             return {
                 "success": False
             }
-            
-
 
 
     def create_many(self, image:list, thumbnail:list, features:list, metadata:list):
