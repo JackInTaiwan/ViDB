@@ -59,6 +59,7 @@ def delete_all(body=None, storage_engine=None):
             "body": {}
         }
 
+
 @register_as_operation(name=OP.DELETE_MANY_BY_IDS)
 def delete_many_by_ids(body=None, storage_engine=None):
     target_index_list = body["target_index_list"]
