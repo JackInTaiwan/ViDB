@@ -7,6 +7,7 @@ import socket
 import cv2
 import numpy as np
 
+from argparse import ArgumentParser
 from PIL import Image
 
 
@@ -21,53 +22,71 @@ except socket.error as error:
 
 
 # operation 1: browse_by_random
-msg = {
-    "request_type": "browse_by_random",
-    "body": {
-        "num_inst": 10
+def browse_by_random():
+    msg = {
+        "request_type": "browse_by_random",
+        "body": {
+            "num_inst": 10
+        }
     }
-}
+
+    return msg
+
 
 # operation 2: browse_by_cluster
-# msg = {
-#     "request_type": "browse_by_cluster",
-#     "body": {
-#         "num_inst": 10
-#     }
-# }
+def browse_by_cluster():
+    msg = {
+        "request_type": "browse_by_cluster",
+        "body": {
+            "num_inst": 10
+        }
+    }
+
+    return msg
 
 
 
-### Encode the message
-str_ = json.dumps(msg)
-byte_ = str_.encode()
-encoded_msg = byte_
+if __name__ == "__main__":
+    OPERATION_TABLE = {
+        "browse_by_random": browse_by_random,
+        "browse_by_cluster": browse_by_cluster
+    }
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--operation", "-o",
+        help="specified operation",
+        required=True,
+        choices=OPERATION_TABLE.keys()
+    )
+    args = parser.parse_args()
 
-socket_.send(encoded_msg)
+    ### Encode the message
+    msg = OPERATION_TABLE[args.operation]()
+    str_ = json.dumps(msg)
+    byte_ = str_.encode()
+    encoded_msg = byte_
 
+    ### Send and receive the response
+    socket_.send(encoded_msg)
+    str_ = ""
+    while response:=socket_.recv(1024):
+        str_ += response.decode()
+    socket_.close()
 
-### Receive the response
-str_ = ""
-while response:=socket_.recv(1024):
-    str_ += response.decode()
-socket_.close()
+    ### Decode the message
+    decoded_res = json.loads(str_)
+    print("> total_instance_num:", decoded_res["body"]["total_instance_num"])
+    print("> browse_instance_num:", decoded_res["body"]["browse_instance_num"])
 
-
-### Decode the message
-decoded_res = json.loads(str_)
-
-
-### Present the thumbnails
-for k, v in decoded_res["body"].items():
-    image_base64 = v
-    image_bytes = base64.b64decode(image_base64)
-    image = Image.open(io.BytesIO(image_bytes))
-    
-    image_array = np.array(image)
-    cv2.namedWindow(k)
-    cv2.moveWindow(k, 500, 500) 
-    cv2.imshow(k, image_array)
-    cv2.waitKey(0)
-    cv2.destroyWindow(k)
-
-socket_.close()
+    ### Present the thumbnails
+    for k, v in decoded_res["body"]["instance"].items():
+        image_base64 = v
+        image_bytes = base64.b64decode(image_base64)
+        image = Image.open(io.BytesIO(image_bytes))
+        
+        image_array = np.array(image)
+        cv2.namedWindow(k)
+        cv2.moveWindow(k, 500, 500) 
+        cv2.imshow(k, image_array)
+        cv2.waitKey(0)
+        cv2.destroyWindow(k)

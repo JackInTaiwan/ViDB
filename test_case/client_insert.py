@@ -131,7 +131,7 @@ if __name__ == "__main__":
     byte_ = str_.encode()
     encoded_msg = byte_
 
-    ### Send the request
+    ### Send and receive the request
     socket_.send(encoded_msg)
     response = socket_.recv(100000)
     socket_.close()
