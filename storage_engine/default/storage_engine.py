@@ -116,10 +116,19 @@ class StorageEngine(BaseStorageEngine):
             
             logger.info("Successfully create an instance with id={}.".format(index))
 
-            return True
+            return {
+                "success": True,
+                "index": index
+            }
 
         except Exception as e:
-            raise e
+            logger.error(e)
+
+            return {
+                "success": False
+            }
+            
+
 
 
     def create_many(self, image:list, thumbnail:list, features:list, metadata:list):

@@ -11,12 +11,24 @@ class Resolver(BaseResolver):
         self.encoding = os.getenv("msg_resolver.encoding")
 
     
-    def encode(self, decoded_msg, encoding=None):
-        return self.dict_to_byte(decoded_msg, encoding)
+    def dry_decode(self, encoded_msg, encoding=None):
+        try:
+            encoding = encoding or self.encoding
+            str_ = encoded_msg.decode(encoding=encoding, errors="strict")
+            dict_ = json.loads(str_)
+
+            return dict_
+            
+        except:
+            return None
 
     
     def decode(self, encoded_msg, encoding=None):
         return self.byte_to_dict(encoded_msg, encoding)
+
+
+    def encode(self, decoded_msg, encoding=None):
+        return self.dict_to_byte(decoded_msg, encoding)
 
 
     @catch_error
@@ -26,6 +38,7 @@ class Resolver(BaseResolver):
             "body": msg["body"]
         }
     
+
     @catch_error
     def dict_to_byte(self, dict_, encoding):
         encoding = encoding or self.encoding
@@ -35,10 +48,11 @@ class Resolver(BaseResolver):
 
         return byte_
 
+
     @catch_error
     def byte_to_dict(self, byte_, encoding):
         encoding = encoding or self.encoding
         str_ = byte_.decode(encoding=encoding, errors="strict")
-        dict_ = json.loads(str_)  
+        dict_ = json.loads(str_)
 
         return dict_
