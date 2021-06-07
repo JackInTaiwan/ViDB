@@ -61,19 +61,62 @@ def insert_many_by_dir(body=None, storage_engine=None):
             "success": False,
             "body": {}
         }
+@register_as_operation(name=OP.INSERT_ONE_BY_BYTE)
+def insert_one_by_bytes(body=None, storage_engine=None):
+    bytes, metadata = body["bytes"], body["metadata"]
+
+    try:
+        insert_one_byte(bytes, metadata, storage_engine=storage_engine)
+
+        return {
+            "success": True,
+            "body": {}
+        }   
+
+    except Exception as e:
+        logger.error(e)
+
+        return {
+            "success": False,
+            "body": {}
+        }
+
+
+@register_as_operation(name=OP.INSERT_MANY_BY_BYTE)
+def insert_many_by_bytes(body=None, storage_engine=None):
+    bytes_list, metadata_list = body["bytes_list"], body["metadata"]
+
+    try:
+        metadata_list = metadata_list  or []
+
+        if metadata_list:     
+            for img_b, md in zip(bytes_list, metadata_list):
+                insert_one_byte(img_b, md, storage_engine=storage_engine)
+                
+
+        return {
+            "success": True,
+            "body": {}
+        }   
+
+    except Exception as e:
+        logger.error(e)
+
+        return {
+            "success": False,
+            "body": {}
+        }
 
 
 def insert_one(image_path, metadata, storage_engine=None):
     img_PIL = Image.open(image_path)
 
-    filename = image_path.split('/')[-1].split('.')[0]
-
     # PIL image to numpy
     compressed_img = compress(img_PIL)
 
     # Transform image to string and store as .txt file
-    original_str = image_to_string(img_PIL, filename)
-    compressed_str = image_to_string(compressed_img, filename+'_compressed')
+    original_str = image_to_string(img_PIL)
+    compressed_str = image_to_string(compressed_img)
 
     # Read metadata and store as .json file
     metadata = register_metadata(img_PIL.format, img_PIL.size, img_PIL.mode, metadata)
@@ -83,6 +126,25 @@ def insert_one(image_path, metadata, storage_engine=None):
     
     storage_engine.create_one(original_str, compressed_str, feature, metadata)
 
+def insert_one_byte(bytes, metadata, storage_engine=None):
+    
+    #decode to PIL
+    # Reading image.txt to decode it as image
+    img_PIL = Image.open(io.BytesIO(bytes))
+
+    # PIL image to numpy
+    compressed_img = compress(img_PIL)
+
+    # Transform image to string and store as .txt file
+    compressed_bytes = image_to_string(compressed_img)
+
+    # Read metadata and store as .json file
+    metadata = register_metadata(img_PIL.format, img_PIL.size, img_PIL.mode, metadata)
+
+    # Extract feature and store as .pt file
+    feature = extract_feature(img_PIL)
+    
+    storage_engine.create_one(bytes, compressed_bytes, feature, metadata)
 
 def register_metadata(form, size, mode, md):
     # format: image type e.g.PNG, JPEG...
@@ -115,7 +177,7 @@ def compress(img):
     return img2
 
 
-def image_to_string(img, filename):
+def image_to_string(img):
     #img: should be a PIL image
     output = io.BytesIO()
     img.save(output, format="png")
