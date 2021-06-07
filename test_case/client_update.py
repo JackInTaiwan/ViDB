@@ -1,9 +1,10 @@
-import socket
 import os
 import sys
 import json
+import socket
 
 from argparse import ArgumentParser
+
 
 
 try:
@@ -17,7 +18,7 @@ except socket.error as error:
 
 # operation 1: update_one_by_id
 def update_one_by_id():
-    target_index = "7394efeeef194d1eb3c1c975f1d06e4f"
+    target_index = "2def7ca1d52140148fd8d56adb79026c"
     new_metadata = {"tag_style": "style1"}
 
     msg = {
