@@ -1,7 +1,9 @@
-import socket
 import os
 import sys
 import json
+import socket
+
+from argparse import ArgumentParser
 
 
 try:
@@ -11,43 +13,74 @@ except socket.error as error:
     sys.stderr.write(str(error))
     exit(1)
 
-# operation 1: delete_one_by_id
-'''
-msg = {
-    "request_type": "delete_one_by_id",
-    "body": {
-        "target_index": "a36eecce196245bbb40d17b8390e15c4"
-    }
-}
-'''
 
-# operation 2: delete_one_by_id
-# msg = {
-#     "request_type": "delete_many_by_ids",
-#     "body": {
-#         "target_index_list": ["ed656edceb0248e5922926535d7a5dfb"]
-#     }
-# }
+
+# operation 1: delete_one_by_id
+def delete_one_by_id():
+    target_index = "122e233586a14c6799ea7d83ea941a03"
+
+    msg = {
+        "request_type": "delete_one_by_id",
+        "body": {
+            "target_index": target_index
+        }
+    }
+
+    return msg
+
+
+# operation 2: delete_many_by_ids
+def delete_many_by_ids():
+    target_index_list = ["06920bfcc36e4ce3b7710a5598df8b13"]
+
+    msg = {
+        "request_type": "delete_many_by_ids",
+        "body": {
+            "target_index_list": target_index_list
+        }
+    }
+
+    return msg
+
 
 # operation 3: delete_all_data
-msg = {
-    "request_type": "delete_all",
-    "body": {
+def delete_all_data():
+    msg = {
+        "request_type": "delete_all",
+        "body": {}
     }
-}
+
+    return msg
 
 
-### Encode the message
-str_ = json.dumps(msg)
-byte_ = str_.encode()
-encoded_msg = byte_
 
-socket_.send(encoded_msg)
-response = socket_.recv(1024)
-str_ = response.decode()
+if __name__ == "__main__":
+    OPERATION_TABLE = {
+        "delete_one_by_id": delete_one_by_id,
+        "delete_many_by_ids": delete_many_by_ids,
+        "delete_all_data": delete_all_data
+    }
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--operation", "-o",
+        help="specified operation",
+        required=True,
+        choices=OPERATION_TABLE.keys()
+    )
+    args = parser.parse_args()
 
-### Decode the message
-decoded_res = json.loads(str_)
-print(decoded_res)
+    ### Encode the message
+    msg = OPERATION_TABLE[args.operation]()
+    str_ = json.dumps(msg)
+    byte_ = str_.encode()
+    encoded_msg = byte_
 
-socket_.close()
+    ### Send and receive the request
+    socket_.send(encoded_msg)
+    response = socket_.recv(1024)
+    socket_.close()
+    str_ = response.decode()
+
+    ### Decode the message
+    decoded_res = json.loads(str_)
+    print(decoded_res)

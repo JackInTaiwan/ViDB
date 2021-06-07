@@ -28,7 +28,7 @@ class Controller(socketserver.BaseRequestHandler):
 
             while msg_ := self.request.recv(self.max_reception_byte):
                 msg += msg_
-                decoded_msg = self.msg_resolver.decode(msg)
+                decoded_msg = self.msg_resolver.dry_decode(msg)
                 if decoded_msg: break
 
             data = self.msg_resolver.parse(decoded_msg)
@@ -38,12 +38,16 @@ class Controller(socketserver.BaseRequestHandler):
                 encoded_response = self.msg_resolver.encode(response)
                 self.request.send(encoded_response)
 
-            result = OPERATION[data["request_type"]](body=data["body"], storage_engine=self.storage_engine)
+            result = OPERATION[data["request_type"]](
+                body=data["body"],
+                storage_engine=self.storage_engine
+            )
+
             encoded_result = self.msg_resolver.encode(result)
             
             # Send the result back
             self.request.send(encoded_result)
-            logger.info("[request_type: {}] [status: success] [byte: {}]".format(data["request_type"], len(msg)))
+            logger.info("[request_type: {}] [status: success]".format(data["request_type"]))
 
         finally:
             # Close the session

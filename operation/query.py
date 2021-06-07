@@ -16,10 +16,16 @@ def query_nearest_by_content(body=None, storage_engine=None):
     try:
         result = find_instance_by_mode(target_index, num_inst, True, "content", storage_engine, return_origin_size)
 
-        return {
-            "success": True,
-            "body": result
-        }   
+        if result:
+            return {
+                "success": True,
+                "body": result
+            }
+        else:
+            return {
+                "success": False,
+                "body": {}
+            }
 
     except Exception as e:
         logger.error(e)
@@ -37,10 +43,16 @@ def query_nearest_by_style(body=None, storage_engine=None):
     try:
         result = find_instance_by_mode(target_index, num_inst, True, "style", storage_engine, return_origin_size)
 
-        return {
-            "success": True,
-            "body": result
-        }   
+        if result:
+            return {
+                "success": True,
+                "body": result
+            }
+        else:
+            return {
+                "success": False,
+                "body": {}
+            }  
 
     except Exception as e:
         logger.error(e)
@@ -58,10 +70,16 @@ def query_farthest_by_content(body=None, storage_engine=None):
     try:
         result = find_instance_by_mode(target_index, num_inst, False, "content", storage_engine, return_origin_size)
 
-        return {
-            "success": True,
-            "body": result
-        }   
+        if result:
+            return {
+                "success": True,
+                "body": result
+            }
+        else:
+            return {
+                "success": False,
+                "body": {}
+            }
 
     except Exception as e:
         logger.error(e)
@@ -79,10 +97,16 @@ def query_farthest_by_style(body=None, storage_engine=None):
     try:
         result = find_instance_by_mode(target_index, num_inst, False, "style", storage_engine, return_origin_size)
 
-        return {
-            "success": True,
-            "body": result
-        }   
+        if result:
+            return {
+                "success": True,
+                "body": result
+            }
+        else:
+            return {
+                "success": False,
+                "body": {}
+            }  
 
     except Exception as e:
         logger.error(e)
@@ -100,10 +124,16 @@ def query_by_tag_all(body=None, storage_engine=None):
     try:
         result = find_instance_by_tag(target_index, num_inst, "all", tags, storage_engine, return_origin_size)
 
-        return {
-            "success": True,
-            "body": result
-        }   
+        if result:
+            return {
+                "success": True,
+                "body": result
+            }
+        else:
+            return {
+                "success": False,
+                "body": {}
+            } 
 
     except Exception as e:
         logger.error(e)
@@ -121,10 +151,16 @@ def query_by_tag_partial(body=None, storage_engine=None):
     try:
         result = find_instance_by_tag(target_index, num_inst, "partial", tags, storage_engine, return_origin_size)
 
-        return {
-            "success": True,
-            "body": result
-        }   
+        if result:
+            return {
+                "success": True,
+                "body": result
+            }
+        else:
+            return {
+                "success": False,
+                "body": {}
+            } 
 
     except Exception as e:
         logger.error(e)
@@ -142,10 +178,16 @@ def query_range_by_content(body=None, storage_engine=None):
     try:
         result = find_instance_by_range(group_index, num_inst, "content", storage_engine, return_origin_size)
 
-        return {
-            "success": True,
-            "body": result
-        }   
+        if result:
+            return {
+                "success": True,
+                "body": result
+            }
+        else:
+            return {
+                "success": False,
+                "body": {}
+            }   
 
     except Exception as e:
         logger.error(e)
@@ -163,10 +205,16 @@ def query_range_by_style(body=None, storage_engine=None):
     try:
         result = find_instance_by_range(group_index, num_inst, "style", storage_engine, return_origin_size)
 
-        return {
-            "success": True,
-            "body": result
-        }   
+        if result:
+            return {
+                "success": True,
+                "body": result
+            }
+        else:
+            return {
+                "success": False,
+                "body": {}
+            } 
 
     except Exception as e:
         logger.error(e)
@@ -186,44 +234,47 @@ def find_instance_by_mode(target_index, num_inst, nearest=True, mode="content", 
         nearest (bool): Find the most similar ones if nearest=True, else find the most dissimilar ones
         mode ("content" or "style"): The comparison metric
     """
+    try:
+        index_list = storage_engine.read_all_idx()
+        
+        _, _, target_feature, _ = storage_engine.read_one(target_index, 'features')
+        
+        losses = []
+        for index in index_list:
+            if index != target_index:
+                _, _, feature, _ = storage_engine.read_one(index, 'features')
 
-    index_list = storage_engine.read_all_idx()
-    
-    _, _, target_feature, _ = storage_engine.read_one(target_index, 'features')
-    
-    losses = []
-    for index in index_list:
-        if index != target_index:
-            _, _, feature, _ = storage_engine.read_one(index, 'features')
+                if mode == "content":
+                    loss = content_loss(feature, target_feature)
+                elif mode == "style":
+                    loss = style_loss(feature, target_feature)
 
-            if mode == "content":
-                loss = content_loss(feature, target_feature)
-            elif mode == "style":
-                loss = style_loss(feature, target_feature)
+                losses.append((index, loss.item()))
+        
+        losses = sorted(losses, key=lambda tup: tup[1])
+        if not nearest:
+            # reverse the order
+            losses = losses[::-1]
+        
+        n = min(num_inst, len(losses))
+        selected = []
+        for i in range(n):
+            selected.append(losses[i][0])
 
-            losses.append((index, loss.item()))
-    
-    losses = sorted(losses, key=lambda tup: tup[1])
-    if not nearest:
-        # reverse the order
-        losses = losses[::-1]
-    
-    n = min(num_inst, len(losses))
-    selected = []
-    for i in range(n):
-        selected.append(losses[i][0])
+        if return_origin_size:
+            img_bytes, _, _, _ = storage_engine.read_many(selected, mode ='image')
+        else:
+            _, img_bytes, _, _ = storage_engine.read_many(selected, mode ='thumbnail')
+        
+        output = {}
+        
+        for idx, img in zip(selected, img_bytes):
+            output[idx] = base64.b64encode(img).decode()
 
-    if return_origin_size:
-        img_bytes, _, _, _ = storage_engine.read_many(selected, mode ='image')
-    else:
-        _, img_bytes, _, _ = storage_engine.read_many(selected, mode ='thumbnail')
-    
-    output = {}
-    
-    for idx, img in zip(selected, img_bytes):
-        output[idx] = base64.b64encode(img).decode()
+        return output
 
-    return output
+    except:
+        return None
 
 
 def find_instance_by_tag(target_index, num_inst, mode, tags, storage_engine=None, return_origin_size=False):
@@ -235,54 +286,57 @@ def find_instance_by_tag(target_index, num_inst, mode, tags, storage_engine=None
         mode ("all" or "partial"): "all" if both content and style have to match tags, or "partial" otherwise
         tags (list): Content and/or style tags
     """
+    try:
+        index_list = storage_engine.read_all_idx()
+        
+        _, _, target_feature, _ = storage_engine.read_one(target_index, 'features')
+        
+        losses = []
+        ratio = 5e6 # normalize content and style losses
 
-    index_list = storage_engine.read_all_idx()
+        for index in index_list:
+            if index != target_index:
+                _, _, feature, metadata = storage_engine.read_one(index, ['features', 'metadata'])
+                
+                content_tag = metadata["tag_content"]
+                style_tag = metadata["tag_style"]
+
+                if mode == "all":
+                    if content_tag in tags and style_tag in tags:
+                        loss_c = content_loss(feature, target_feature)
+                        loss_s = style_loss(feature, target_feature) * ratio
+                        loss = (loss_c + loss_s) / 2
+                        losses.append((index, loss.item()))
+                
+                elif mode == "partial":
+                    if content_tag in tags:
+                        loss = content_loss(feature, target_feature)
+                        losses.append((index, loss.item()))
+                    if style_tag in tags:
+                        loss = style_loss(feature, target_feature) * ratio
+                        losses.append((index, loss.item()))
+        
+        losses = sorted(losses, key=lambda tup: tup[1])
+
+        n = min(num_inst, len(losses))
+        selected = []
+        for i in range(n):
+            selected.append(losses[i][0])
+
+        if return_origin_size:
+            img_bytes, _, _, _ = storage_engine.read_many(selected, mode ='image')
+        else:
+            _, img_bytes, _, _ = storage_engine.read_many(selected, mode ='thumbnail')
+        
+        output = {}
+        
+        for idx, img in zip(selected, img_bytes):
+            output[idx] = base64.b64encode(img).decode()
+
+        return output
     
-    _, _, target_feature, _ = storage_engine.read_one(target_index, 'features')
-    
-    losses = []
-    ratio = 5e6 # normalize content and style losses
-
-    for index in index_list:
-        if index != target_index:
-            _, _, feature, metadata = storage_engine.read_one(index, ['features', 'metadata'])
-            
-            content_tag = metadata["tag_content"]
-            style_tag = metadata["tag_style"]
-
-            if mode == "all":
-                if content_tag in tags and style_tag in tags:
-                    loss_c = content_loss(feature, target_feature)
-                    loss_s = style_loss(feature, target_feature) * ratio
-                    loss = (loss_c + loss_s) / 2
-                    losses.append((index, loss.item()))
-            
-            elif mode == "partial":
-                if content_tag in tags:
-                    loss = content_loss(feature, target_feature)
-                    losses.append((index, loss.item()))
-                if style_tag in tags:
-                    loss = style_loss(feature, target_feature) * ratio
-                    losses.append((index, loss.item()))
-    
-    losses = sorted(losses, key=lambda tup: tup[1])
-
-    n = min(num_inst, len(losses))
-    selected = []
-    for i in range(n):
-        selected.append(losses[i][0])
-
-    if return_origin_size:
-        img_bytes, _, _, _ = storage_engine.read_many(selected, mode ='image')
-    else:
-        _, img_bytes, _, _ = storage_engine.read_many(selected, mode ='thumbnail')
-    
-    output = {}
-    
-    for idx, img in zip(selected, img_bytes):
-        output[idx] = base64.b64encode(img).decode()
-
-    return output
+    except:
+        return None
 
 
 def find_instance_by_range(group_index, num_inst=0, mode="content", storage_engine=None, return_origin_size=False):
@@ -293,51 +347,54 @@ def find_instance_by_range(group_index, num_inst=0, mode="content", storage_engi
         num_inst (int): Number of images to query
         mode ("content" or "style"): The comparison metric
     """
+    try:
+        index_list = storage_engine.read_all_idx()
+        
+        target_features = []
+        for index in group_index:
+            _, _, target_feature, _ = storage_engine.read_one(index, 'features')
+            target_features.append(target_feature)
+        
+        central_feature = get_central_feature(target_features)
+        
+        losses = []
+        for index in index_list:
+            if index not in group_index:
+                _, _, feature, _ = storage_engine.read_one(index, 'features')
 
-    index_list = storage_engine.read_all_idx()
-    
-    target_features = []
-    for index in group_index:
-        _, _, target_feature, _ = storage_engine.read_one(index, 'features')
-        target_features.append(target_feature)
-    
-    central_feature = get_central_feature(target_features)
-    
-    losses = []
-    for index in index_list:
-        if index not in group_index:
-            _, _, feature, _ = storage_engine.read_one(index, 'features')
+                if mode == "content":
+                    loss = content_loss(feature, central_feature)
+                elif mode == "style":
+                    loss = style_loss(feature, central_feature)
+                
+                losses.append((index, loss.item()))
+        
+        losses = sorted(losses, key=lambda tup: tup[1])
+        
+        selected = []
+        if num_inst == 0:
+            thre = get_average_distance(target_features, central_feature, mode)
+            for loss in losses:
+                if loss[1] <= thre:
+                    selected.append(loss[0])
+                else:
+                    break
+        else:
+            n = min(num_inst, len(losses))
+            for i in range(n):
+                selected.append(losses[i][0])
 
-            if mode == "content":
-                loss = content_loss(feature, central_feature)
-            elif mode == "style":
-                loss = style_loss(feature, central_feature)
-            
-            losses.append((index, loss.item()))
-    
-    losses = sorted(losses, key=lambda tup: tup[1])
-    
-    selected = []
-    if num_inst == 0:
-        thre = get_average_distance(target_features, central_feature, mode)
-        for loss in losses:
-            if loss[1] <= thre:
-                selected.append(loss[0])
-            else:
-                break
-    else:
-        n = min(num_inst, len(losses))
-        for i in range(n):
-            selected.append(losses[i][0])
+        if return_origin_size:
+            img_bytes, _, _, _ = storage_engine.read_many(selected, mode ='image')
+        else:
+            _, img_bytes, _, _ = storage_engine.read_many(selected, mode ='thumbnail')
+        
+        output = {}
+        
+        for idx, img in zip(selected, img_bytes):
+            output[idx] = base64.b64encode(img).decode()
 
-    if return_origin_size:
-        img_bytes, _, _, _ = storage_engine.read_many(selected, mode ='image')
-    else:
-        _, img_bytes, _, _ = storage_engine.read_many(selected, mode ='thumbnail')
-    
-    output = {}
-    
-    for idx, img in zip(selected, img_bytes):
-        output[idx] = base64.b64encode(img).decode()
+        return output
 
-    return output
+    except:
+        return None

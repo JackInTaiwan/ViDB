@@ -19,12 +19,20 @@ def insert_one_by_path(body=None, storage_engine=None):
     image_path, metadata = body["image_path"], body["metadata"]
 
     try:
-        insert_one(image_path, metadata, storage_engine=storage_engine)
+        result = insert_one(image_path, metadata, storage_engine=storage_engine)
 
-        return {
-            "success": True,
-            "body": {}
-        }   
+        if result["success"]:
+            return {
+                "success": True,
+                "body": {
+                    "index": result["index"]
+                }
+            }
+        else:
+            return {
+                "success": False,
+                "body": {}
+            }
 
     except Exception as e:
         logger.error(e)
@@ -45,15 +53,27 @@ def insert_many_by_dir(body=None, storage_engine=None):
 
         metadata = metadata or {}
         meta_file_list = metadata.keys()
+        index_list = []
 
         for filename in os.listdir(image_fold_dir):
             metadata_ = metadata[filename] if filename in meta_file_list else None
-            insert_one(os.path.join(image_fold_dir, filename), metadata_, storage_engine=storage_engine)
+            result = insert_one(os.path.join(image_fold_dir, filename), metadata_, storage_engine=storage_engine)
+            if not result["success"]:
+                break
+            else:
+                index_list.append(result["index"])
+        else:
+            return {
+                "success": True,
+                "body": {
+                    "index_list": index_list
+                }
+            }
 
         return {
-            "success": True,
+            "success": False,
             "body": {}
-        }   
+        }
 
     except Exception as e:
         logger.error(e)
@@ -62,17 +82,27 @@ def insert_many_by_dir(body=None, storage_engine=None):
             "success": False,
             "body": {}
         }
+
+
 @register_as_operation(name=OP.INSERT_ONE_BY_BYTE)
 def insert_one_by_bytes(body=None, storage_engine=None):
     bytes, metadata = body["bytes"], body["metadata"]
 
     try:
-        insert_one_byte(bytes, metadata, storage_engine=storage_engine)
+        result = insert_one_byte(bytes, metadata, storage_engine=storage_engine)
 
-        return {
-            "success": True,
-            "body": {}
-        }   
+        if result["success"]:
+            return {
+                "success": True,
+                "body": {
+                    "index": result["index"]
+                }
+            }
+        else:
+            return {
+                "success": False,
+                "body": {}
+            }
 
     except Exception as e:
         logger.error(e)
@@ -88,17 +118,27 @@ def insert_many_by_bytes(body=None, storage_engine=None):
     bytes_list, metadata_list = body["bytes_list"], body["metadata"]
 
     try:
-        metadata_list = metadata_list  or []
+        metadata_list = metadata_list or []
+        index_list = []
 
-        if metadata_list:     
-            for img_b, md in zip(bytes_list, metadata_list):
-                insert_one_byte(img_b, md, storage_engine=storage_engine)
-                
+        for img_b, md in zip(bytes_list, metadata_list):
+            result = insert_one_byte(img_b, md, storage_engine=storage_engine)
+            if not result["success"]:
+                break
+            else:
+                index_list.append(result["index"])
+        else:
+            return {
+                "success": True,
+                "body": {
+                    "index_list": index_list
+                }
+            }
 
         return {
-            "success": True,
+            "success": False,
             "body": {}
-        }   
+        } 
 
     except Exception as e:
         logger.error(e)
@@ -116,8 +156,8 @@ def insert_one(image_path, metadata, storage_engine=None):
     compressed_img = compress(img_PIL)
 
     # Transform image to string and store as .txt file
-    original_str = image_to_string(img_PIL)
-    compressed_str = image_to_string(compressed_img)
+    original_byte = image_to_byte(img_PIL)
+    compressed_byte = image_to_byte(compressed_img)
 
     # Read metadata and store as .json file
     metadata = register_metadata(img_PIL.format, img_PIL.size, img_PIL.mode, metadata)
@@ -125,20 +165,22 @@ def insert_one(image_path, metadata, storage_engine=None):
     # Extract feature and store as .pt file
     feature = extract_feature(img_PIL)
     
-    storage_engine.create_one(original_str, compressed_str, feature, metadata)
+    result = storage_engine.create_one(original_byte, compressed_byte, feature, metadata)
+
+    return result
+
 
 def insert_one_byte(bytes, metadata, storage_engine=None):
-    
-    #decode to PIL
+    # decode to PIL
     # Reading image.txt to decode it as image
-    bytes = base64.b64decode(bytes)
-    img_PIL = Image.open(io.BytesIO(bytes))
+    original_byte = base64.b64decode(bytes)
+    img_PIL = Image.open(io.BytesIO(original_byte))
 
     # PIL image to numpy
     compressed_img = compress(img_PIL)
 
     # Transform image to string and store as .txt file
-    compressed_bytes = image_to_string(compressed_img)
+    compressed_bytes = image_to_byte(compressed_img)
 
     # Read metadata and store as .json file
     metadata = register_metadata(img_PIL.format, img_PIL.size, img_PIL.mode, metadata)
@@ -146,7 +188,10 @@ def insert_one_byte(bytes, metadata, storage_engine=None):
     # Extract feature and store as .pt file
     feature = extract_feature(img_PIL)
     
-    storage_engine.create_one(bytes, compressed_bytes, feature, metadata)
+    result = storage_engine.create_one(original_byte, compressed_bytes, feature, metadata)
+
+    return result
+
 
 def register_metadata(form, size, mode, md):
     # format: image type e.g.PNG, JPEG...
@@ -179,7 +224,7 @@ def compress(img):
     return img2
 
 
-def image_to_string(img):
+def image_to_byte(img):
     #img: should be a PIL image
     output = io.BytesIO()
     img.save(output, format="png")

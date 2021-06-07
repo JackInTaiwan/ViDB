@@ -1,10 +1,11 @@
+import logging
 import uuid
 import os
 import json
 import time
-import torch
-import logging
 import glob
+import shutil
+import torch
 
 from . import btree
 from ..base import BaseStorageEngine
@@ -70,10 +71,19 @@ class StorageEngine(BaseStorageEngine):
     def clean_storage(self):
         folders = [self.KW_IMAGE, self.KW_THUMBNAIL, self.KW_METADATA, self.KW_FEATURE]
         for f in folders:
-            folder_path = os.path.join(self.storage_dir,f,"*")
-            files = glob.glob(folder_path)
-            for f in files:
-                os.remove(f)
+            folder_path = os.path.join(self.storage_dir, f, "*")
+            dirs = glob.glob(folder_path)
+            for dir_ in dirs:
+                shutil.rmtree(dir_)
+
+        os.remove(os.path.join(self.storage_dir, self.STORAGE_ENTRY_FILE))
+        os.remove(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE))
+
+        fd = os.open(os.path.join(self.storage_dir, self.STORAGE_ENTRY_FILE), os.O_CREAT) 
+        os.close(fd)
+
+        fd = os.open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), os.O_CREAT) 
+        os.close(fd)
         
         logger.info("Successfully clean all data.")
 
@@ -87,7 +97,7 @@ class StorageEngine(BaseStorageEngine):
 
         # generate unique index
         index = self.generate_id()
-        fd = self.locate_id(index)
+        fd = self.locate_id(index, do_insert_new=True)
 
         try:
             # save image to...
@@ -116,10 +126,17 @@ class StorageEngine(BaseStorageEngine):
             
             logger.info("Successfully create an instance with id={}.".format(index))
 
-            return True
+            return {
+                "success": True,
+                "index": index
+            }
 
         except Exception as e:
-            raise e
+            logger.error(e)
+
+            return {
+                "success": False
+            }
 
 
     def create_many(self, image:list, thumbnail:list, features:list, metadata:list):
@@ -150,8 +167,7 @@ class StorageEngine(BaseStorageEngine):
                 f = os.open(fp, os.O_RDONLY)
                 image = str(os.read(f, f))
                 os.close(f)
-                """
-                
+                """       
             
             # retrieve thumbnail object as string
             if ("all" in mode) | ("thumbnail" in mode):
@@ -164,7 +180,6 @@ class StorageEngine(BaseStorageEngine):
                 thumbnail = str(os.read(f, f))
                 os.close(f)
                 """
-                
 
             # retrieve features object as ...
             if ("all" in mode) | ("features" in mode):
@@ -178,6 +193,7 @@ class StorageEngine(BaseStorageEngine):
                     metadata = json.load(file)
 
         except Exception as e:
+            logger.error(e)
             raise e
 
         return image, thumbnail, features, metadata # TBD: how to return independently
@@ -209,7 +225,7 @@ class StorageEngine(BaseStorageEngine):
             return None
 
 
-    def delete_one(self, index): 
+    def delete_one(self, index):
         fd = self.locate_id(index)
 
         try:
@@ -222,18 +238,19 @@ class StorageEngine(BaseStorageEngine):
             fp = os.path.join(self.storage_dir, self.KW_METADATA, fd + self.SUFFIX_METADATA)
             os.remove(fp)
 
-            with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "r+") as file:
-                text = file.read()
+            with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "r") as f:
+                text = f.read()
 
                 if text == "":
                     return False
                 
                 tree = btree.Binary_search_tree(btree.deserialize(text))
                 tree.deleteNode(tree.root, index)
-                file.seek(0)
-                file.write(btree.serialize(tree.root))
 
-            self.update_storage_table(fd, delete = True)
+            with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "w") as f:
+                f.write(btree.serialize(tree.root))
+
+            self.update_storage_table(fd, delete=True)
             return True
 
         except Exception as e:
@@ -258,23 +275,48 @@ class StorageEngine(BaseStorageEngine):
 
     def update_one(self, index, metadata):
         result = self.update_metadata(index, metadata)
-        return result
+
+        if result["success"]:
+            return {
+                "success": True,
+                "updated_data": {result["updated_index"]: result["updated_data"]}
+            }
+
+        else:
+            return {
+                "success": False
+            }
     
 
     def update_many(self, index:list, metadata:list):
         if (len(index) != len(metadata)):
-            return False
+            return {
+                "success": False,
+            }
+            
         try:
+            updated_data = {}
             for index_, metadata_ in zip(index, metadata):
-                result = self.update_metadata(index_, metadata_)
-                if not result:
+                update_result = self.update_metadata(index_, metadata_)
+                if not update_result["success"]:
                     # abort the transation
-                    return False
-            return True
+                    return {
+                        "success": False,
+                    }
+                updated_data[update_result["updated_index"]] = update_result["updated_data"]
+
+            return {
+                "success": True,
+                "updated_data": updated_data
+            }
 
         except Exception as e:
             logger.error(e)
-            return False
+
+            return {
+                "success": False,
+                "body": {}
+            }
 
 
     def update_metadata(self, index:str, target_metadata:dict):
@@ -288,20 +330,35 @@ class StorageEngine(BaseStorageEngine):
 
             with open(fp, "r") as f:
                 metadata = json.load(f)
-                if metadata["index"] != target_metadata["index"]:
-                    return False # index key is immutable
-                if metadata["c_at"] != target_metadata["c_at"]:
-                    return False # c_at key is immutable
+
+                # index key is immutable
+                if "index" in target_metadata.keys() and metadata["index"] != target_metadata["index"]:
+                    return {
+                        "success": False
+                    }
+
+                # c_at key is immutable
+                if "c_at" in target_metadata.keys() and metadata["c_at"] != target_metadata["c_at"]:
+                    return {
+                        "success": False
+                    }
+
                 metadata.update(target_metadata)
 
             with open(fp, "w") as f:
                 json.dump(metadata, f)
         
-            return True
+            return {
+                "success": True,
+                "updated_index": index,
+                "updated_data": metadata
+            }
 
         except Exception as e:
             logger.error(e)
-            return False
+            return {
+                "success": False
+            }
 
 
     def generate_id(self):
@@ -332,11 +389,10 @@ class StorageEngine(BaseStorageEngine):
                 json.dump(data, f)
 
 
-    def locate_id(self, index=None): 
-        if index == None:
-            # generate unique index
-            index = self.generate_id()
-        
+    def locate_id(self, index=None, do_insert_new=False):
+        if index is None:
+            return None
+
         # open root file, reconstruct bstree
         with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "r+") as file:
             text = file.read()
@@ -345,52 +401,54 @@ class StorageEngine(BaseStorageEngine):
             else: 
                 tree = btree.Binary_search_tree()
 
-
-        # if node exist return file path
-        if tree.search(tree.root, index) != None: # node existed
+        if tree.search(tree.root, index) is not None:
             return tree.search(tree.root, index).path
 
+        elif not do_insert_new:
+            logger.error("Index not found: '{}'".format(index))
+            return None
 
-        # if new node, create new file path
-        with open(os.path.join(self.storage_dir, self.STORAGE_ENTRY_FILE), "r+") as f:
-            fd_path = -1 # 初始值
+        else:
+            # if new node, create new file path
+            with open(os.path.join(self.storage_dir, self.STORAGE_ENTRY_FILE), "r+") as f:
+                fd_path = -1 # 初始值
 
-            try:
-                data = json.load(f)
-                for k, v in data.items():
-                    if v < self.storage_page_max_buffer: # 超過一百個開新資料夾
-                        fd_path = k # 將要輸入的資料夾
-                        break
+                try:
+                    data = json.load(f)
+                    for k, v in data.items():
+                        if v < self.storage_page_max_buffer: # 超過一百個開新資料夾
+                            fd_path = k # 將要輸入的資料夾
+                            break
+                
+                except: # create new storage_table file
+                    data = {}
+                
+                if fd_path == -1: # 代表前面資料夾已滿
+                    # create new folder
+                    fd_path = self.generate_id()
+                    os.makedirs(os.path.join(self.storage_dir, "image", fd_path))
+                    os.makedirs(os.path.join(self.storage_dir, "thumbnail", fd_path))
+                    os.makedirs(os.path.join(self.storage_dir, "features", fd_path))
+                    os.makedirs(os.path.join(self.storage_dir, "metadata", fd_path))
+                    data.update({fd_path:0})
+                    f.seek(0) # relocate the pointer
+                    json.dump(data, f)
+
+            # if new node, insert into bstree
+            if tree.search(tree.root, index) == None:
+                file_path = str(fd_path + "/" + index)
+                tree.insert(index, file_path)
+
+            # rewrite root file
+            with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "r+") as f:
+                f.seek(0)
+                f.write(btree.serialize(tree.root))
             
-            except: # create new storage_table file
-                data = {}
-            
-            if fd_path == -1: # 代表前面資料夾已滿
-                # create new folder
-                fd_path = self.generate_id()
-                os.makedirs(os.path.join(self.storage_dir, "image", fd_path))
-                os.makedirs(os.path.join(self.storage_dir, "thumbnail", fd_path))
-                os.makedirs(os.path.join(self.storage_dir, "features", fd_path))
-                os.makedirs(os.path.join(self.storage_dir, "metadata", fd_path))
-                data.update({fd_path:0})
-                f.seek(0) # relocate the pointer
-                json.dump(data, f)
 
-        # if new node, insert into bstree
-        if tree.search(tree.root, index) == None:
-            file_path = str(fd_path + "/" + index)
-            tree.insert(index, file_path)
+            # mode: without hierarchial structure
+            # file_path = index
 
-        # rewrite root file
-        with open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), "r+") as f:
-            f.seek(0)
-            f.write(btree.serialize(tree.root))
-        
-
-        # mode: without hierarchial structure
-        # file_path = index
-
-        return file_path
+            return file_path
 
 
 """index table

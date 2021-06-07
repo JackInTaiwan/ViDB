@@ -79,6 +79,8 @@ class Binary_search_tree:
         # Base Case
         if cur_node is None:
             return cur_node
+        
+        print(cur_node.value)
     
         # Recursive calls for ancestors of
         # node to be deleted
@@ -86,7 +88,7 @@ class Binary_search_tree:
             cur_node.left_child = self.deleteNode(cur_node.left_child, key)
             return cur_node
     
-        elif(key > cur_node.value):
+        elif key > cur_node.value:
             cur_node.right_child = self.deleteNode(cur_node.right_child, key)
             return cur_node
     
@@ -95,20 +97,25 @@ class Binary_search_tree:
         
         # If root node is a leaf node
         if cur_node.left_child is None and cur_node.right_child is None:
+            print("N 1")
             return None
     
         # If one of the children is empty
         if cur_node.left_child is None:
             temp = cur_node.right_child
             cur_node = None
+            print("N 2", temp)
             return temp
     
         elif cur_node.right_child is None:
+            print("N 3")
             temp = cur_node.left_child
             cur_node = None
+            print("N 3", temp)
             return temp
     
         # If both children exist
+        print("both")
         succParent = cur_node
     
         # Find Successor

@@ -14,10 +14,12 @@ def update_one_by_id(body=None, storage_engine=None):
     try:
         result = storage_engine.update_one(target_index, metadata)
 
-        if result:
+        if result["success"]:
             return {
                 "success": True,
-                "body": {}
+                "body": {
+                    "updated_data": result["updated_data"]
+                }
             }
         else:
             return {
@@ -41,10 +43,12 @@ def update_many_by_ids(body=None, storage_engine=None):
     try:
         result = storage_engine.update_many(target_index_list, metadata_list)
 
-        if result:
+        if result["success"]:
             return {
                 "success": True,
-                "body": {}
+                "body": {
+                    "updated_data": result["updated_data"]
+                }
             }
         else:
             return {
