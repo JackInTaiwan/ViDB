@@ -148,13 +148,14 @@ class StorageEngine(BaseStorageEngine):
         return True
 
 
-    def read_one(self, index, mode = "all"):
+    def read_one(self, index, mode="all"):
         # mode = "image|thumbnail|features|metadata"
         # smode = mode.split("|")
 
         # locate file directory
         try:
             fd = self.locate_id(index)
+
             image, thumbnail, features, metadata = None, None, None, None
 
             # retrieve image object as string
@@ -199,18 +200,20 @@ class StorageEngine(BaseStorageEngine):
         return image, thumbnail, features, metadata # TBD: how to return independently
 
 
-    def read_many(self, index:list, mode = "all"):
+    def read_many(self, index:list, mode="all"):
         image = []
         thumbnail = []
         features = []
         metadata = []
+
         for i in index:
             img, thmbnl, ftrs, mtdt = self.read_one(i, mode)
             image.append(img)
             thumbnail.append(thmbnl)
             features.append(ftrs)
             metadata.append(mtdt)
-        return (image, thumbnail, features, metadata,)
+            
+        return image, thumbnail, features, metadata
 
 
     def read_all_idx(self):
