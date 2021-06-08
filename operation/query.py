@@ -237,12 +237,12 @@ def find_instance_by_mode(target_index, num_inst, nearest=True, mode="content", 
     try:
         index_list = storage_engine.read_all_idx()
         
-        _, _, target_feature, _ = storage_engine.read_one(target_index, 'features')
+        _, _, target_feature, _ = storage_engine.read_one(target_index, "features")
         
         losses = []
         for index in index_list:
             if index != target_index:
-                _, _, feature, _ = storage_engine.read_one(index, 'features')
+                _, _, feature, _ = storage_engine.read_one(index, "features")
 
                 if mode == "content":
                     loss = content_loss(feature, target_feature)
@@ -262,9 +262,9 @@ def find_instance_by_mode(target_index, num_inst, nearest=True, mode="content", 
             selected.append(losses[i][0])
 
         if return_origin_size:
-            img_bytes, _, _, _ = storage_engine.read_many(selected, mode ='image')
+            img_bytes, _, _, _ = storage_engine.read_many(selected, mode ="image")
         else:
-            _, img_bytes, _, _ = storage_engine.read_many(selected, mode ='thumbnail')
+            _, img_bytes, _, _ = storage_engine.read_many(selected, mode ="thumbnail")
         
         output = {}
         
@@ -289,14 +289,14 @@ def find_instance_by_tag(target_index, num_inst, mode, tags, storage_engine=None
     try:
         index_list = storage_engine.read_all_idx()
         
-        _, _, target_feature, _ = storage_engine.read_one(target_index, 'features')
+        _, _, target_feature, _ = storage_engine.read_one(target_index, "features")
         
         losses = []
         ratio = 5e6 # normalize content and style losses
 
         for index in index_list:
             if index != target_index:
-                _, _, feature, metadata = storage_engine.read_one(index, ['features', 'metadata'])
+                _, _, feature, metadata = storage_engine.read_one(index, ["features", "metadata"])
                 
                 content_tag = metadata["tag_content"]
                 style_tag = metadata["tag_style"]
@@ -324,9 +324,9 @@ def find_instance_by_tag(target_index, num_inst, mode, tags, storage_engine=None
             selected.append(losses[i][0])
 
         if return_origin_size:
-            img_bytes, _, _, _ = storage_engine.read_many(selected, mode ='image')
+            img_bytes, _, _, _ = storage_engine.read_many(selected, mode ="image")
         else:
-            _, img_bytes, _, _ = storage_engine.read_many(selected, mode ='thumbnail')
+            _, img_bytes, _, _ = storage_engine.read_many(selected, mode ="thumbnail")
         
         output = {}
         
@@ -352,7 +352,7 @@ def find_instance_by_range(group_index, num_inst=0, mode="content", storage_engi
         
         target_features = []
         for index in group_index:
-            _, _, target_feature, _ = storage_engine.read_one(index, 'features')
+            _, _, target_feature, _ = storage_engine.read_one(index, "features")
             target_features.append(target_feature)
         
         central_feature = get_central_feature(target_features)
@@ -360,7 +360,7 @@ def find_instance_by_range(group_index, num_inst=0, mode="content", storage_engi
         losses = []
         for index in index_list:
             if index not in group_index:
-                _, _, feature, _ = storage_engine.read_one(index, 'features')
+                _, _, feature, _ = storage_engine.read_one(index, "features")
 
                 if mode == "content":
                     loss = content_loss(feature, central_feature)
@@ -385,9 +385,9 @@ def find_instance_by_range(group_index, num_inst=0, mode="content", storage_engi
                 selected.append(losses[i][0])
 
         if return_origin_size:
-            img_bytes, _, _, _ = storage_engine.read_many(selected, mode ='image')
+            img_bytes, _, _, _ = storage_engine.read_many(selected, mode ="image")
         else:
-            _, img_bytes, _, _ = storage_engine.read_many(selected, mode ='thumbnail')
+            _, img_bytes, _, _ = storage_engine.read_many(selected, mode ="thumbnail")
         
         output = {}
         

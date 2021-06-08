@@ -11,6 +11,9 @@ DELETE_ALL = "delete_all"
 UPDATE_ONE_BY_ID = "update_one_by_id"
 UPDATE_MANY_BY_IDS = "update_many_by_ids"
 
+RETRIEVE_ONE = "retrieve_one"
+RETRIEVE_MANY = "retrieve_many"
+
 QUERY_NEAREST_BY_CONTENT = "query_nearest_by_content"
 QUERY_NEAREST_BY_STYLE = "query_nearest_by_style"
 QUERY_FARTHEST_BY_CONTENT = "query_farthest_by_content"

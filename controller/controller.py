@@ -1,6 +1,7 @@
 import os
 import logging
 import socketserver
+import time
 
 from operation import OPERATION
 from variable import (
@@ -12,6 +13,17 @@ logger = logging.getLogger(__name__)
 
 
 
+def clock(func):
+    def clocked(*args, **kwargs):
+        start = time.time()
+        res = func(*args, **kwargs)
+        run_time = time.time() - start
+        return res, run_time
+
+    return clocked
+    
+
+
 class Controller(socketserver.BaseRequestHandler):
     def __init__(self, *args, **kwargs):
         self.max_reception_byte = int(os.getenv("connection.max_reception_byte"))
@@ -19,7 +31,17 @@ class Controller(socketserver.BaseRequestHandler):
         self.storage_engine = Controller.storage_engine
 
         super().__init__(*args, **kwargs)
-        
+    
+
+    @clock
+    def run_operation(self, request_type, body):
+        result = OPERATION[request_type](
+            body=body,
+            storage_engine=self.storage_engine
+        )
+
+        return result
+
 
     def handle(self):
         try:
@@ -34,20 +56,23 @@ class Controller(socketserver.BaseRequestHandler):
             data = self.msg_resolver.parse(decoded_msg)
 
             if not data:
-                response = {"success": False, "error_msg": EM.CANNOT_PARSE_MSG_BODY}
-                encoded_response = self.msg_resolver.encode(response)
-                self.request.send(encoded_response)
+                result = {"success": False, "error_msg": EM.CANNOT_PARSE_MSG_BODY}
+                response = self.msg_resolver.encode(result)
+                self.request.send(response)
 
-            result = OPERATION[data["request_type"]](
-                body=data["body"],
-                storage_engine=self.storage_engine
-            )
-
-            encoded_result = self.msg_resolver.encode(result)
+            result, run_time = self.run_operation(data["request_type"], data["body"])
+            response = self.msg_resolver.encode(result)
             
             # Send the result back
-            self.request.send(encoded_result)
-            logger.info("[request_type: {}] [status: success]".format(data["request_type"]))
+            self.request.send(response)
+            logger.info(
+                "[request_type: {}] [status: {}] [run_time: {}]"
+                .format(
+                    data["request_type"],
+                    "success" if result["success"] else "fail",
+                    round(run_time, 7)
+                )
+            )
 
         finally:
             # Close the session
