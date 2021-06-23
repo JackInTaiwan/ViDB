@@ -20,9 +20,10 @@ logger = logging.getLogger(__name__)
 @register_as_operation(name=OP.BROWSE_BY_RANDOM)
 def browse_by_random(body=None, storage_engine=None):
     num_inst = body["num_inst"]
+    random_seed = body["random_seed"] if "random_seed" in body else None
 
     try:
-        result = browse(num_inst, "random", storage_engine)
+        result = browse(num_inst, "random", random_seed, storage_engine)
 
         return {
             "success": True,
@@ -59,12 +60,13 @@ def browse_by_cluster(body=None, storage_engine=None):
         }
 
 
-def browse(num_inst=30, mode="random", storage_engine=None):
+def browse(num_inst=30, mode="random", random_seed=None, storage_engine=None):
     """Browse the database
 
     Args:
         num_inst (int): Number of images to return
         mode ("random" or "cluster"): Return images by random selection or k-means clustering
+        random_seed (str): A random seed for the random mode.
     """
 
     index_list = storage_engine.read_all_idx()
@@ -72,7 +74,8 @@ def browse(num_inst=30, mode="random", storage_engine=None):
     browse_instance_num = min(num_inst, len(index_list))
     
     if mode == "random":
-        selected_idxs = random.sample(index_list, browse_instance_num)    
+        if random_seed: random.seed(random_seed)
+        selected_idxs = random.sample(index_list, browse_instance_num)
             
     
     elif mode == "cluster":
