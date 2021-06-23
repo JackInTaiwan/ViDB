@@ -26,7 +26,8 @@ def browse_by_random():
     msg = {
         "request_type": "browse_by_random",
         "body": {
-            "num_inst": 10
+            "num_inst": 10,
+            "random_seed": "awesome"
         }
     }
 
