@@ -67,7 +67,6 @@ class StorageEngine(BaseStorageEngine):
             fd = os.open(os.path.join(self.storage_dir, self.STORAGE_TREE_FILE), os.O_CREAT) 
             os.close(fd)
 
-
     def clean_storage(self):
         folders = [self.KW_IMAGE, self.KW_THUMBNAIL, self.KW_METADATA, self.KW_FEATURE]
         for f in folders:

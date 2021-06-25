@@ -29,6 +29,7 @@ class Controller(socketserver.BaseRequestHandler):
         self.max_reception_byte = int(os.getenv("connection.max_reception_byte"))
         self.msg_resolver = Controller.msg_resolver
         self.storage_engine = Controller.storage_engine
+        self.cache = Controller.cache
 
         super().__init__(*args, **kwargs)
     
@@ -37,7 +38,8 @@ class Controller(socketserver.BaseRequestHandler):
     def run_operation(self, request_type, body):
         result = OPERATION[request_type](
             body=body,
-            storage_engine=self.storage_engine
+            storage_engine=self.storage_engine,
+            cache = self.cache
         )
 
         return result

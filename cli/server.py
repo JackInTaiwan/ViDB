@@ -9,6 +9,7 @@ from setup.server import (
     setup_msg_resolver,
     setup_operation,
     setup_storage_engine,
+    setup_cache
 )
 
 OPERATION = {}
@@ -32,11 +33,15 @@ if __name__ == "__main__":
     # Set up the storage engine
     storage_engine = setup_storage_engine(os.getenv("resolver.model"))
 
+    # Set up the Cache
+    cache = setup_cache()
+
     # Set up the server
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     
     Controller.msg_resolver = msg_resolver
     Controller.storage_engine = storage_engine
+    Controller.cache = cache
     
     server = socketserver.ThreadingTCPServer((os.getenv("connection.host"), int(os.getenv("connection.port"))), Controller)
 

@@ -4,6 +4,7 @@ import random
 import base64
 import torch
 import numpy as np
+import time
 
 from PIL import Image
 from sklearn.cluster import KMeans
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 @register_as_operation(name=OP.BROWSE_BY_RANDOM)
-def browse_by_random(body=None, storage_engine=None):
+def browse_by_random(body=None, storage_engine=None, cache=None):
     num_inst = body["num_inst"]
     random_seed = body["random_seed"] if "random_seed" in body else None
 
@@ -40,11 +41,28 @@ def browse_by_random(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.BROWSE_BY_CLUSTER)
-def browse_by_cluster(body=None, storage_engine=None):
-    num_inst = body["num_inst"]
+def browse_by_cluster(body=None, storage_engine=None, cache=None):
+    num_inst, cache_mode = body["num_inst"], body["cache_mode"]
 
     try:
-        result = browse(num_inst, "cluster", storage_engine)
+        if cache_mode == "lazy":
+            if cache.checkupdateByTime("browse_by_cluster", time.time()) and cache.checkupdateByCommand("browse_by_cluster", body):
+                result = browse(num_inst, mode="cluster", storage_engine=storage_engine)
+                cache.update("browse_by_cluster", result)
+            else:
+                result = cache.getCacheContent("browse_by_cluster")
+
+        elif cache_mode == 'aggressive':
+            if (cache.checkInsert() or cache.checkupdateByTime("browse_by_cluster", time.time())) and cache.checkupdateByCommand("browse_by_cluster", body):
+                result = browse(num_inst, mode="cluster", storage_engine=storage_engine)
+                cache.update("browse_by_cluster", result)
+            else:
+                result = cache.getCacheContent("browse_by_cluster")
+        else:
+            result = browse(num_inst, mode="cluster", storage_engine=storage_engine)
+            cache.update("browse_by_cluster", result)
+
+        
 
         return {
             "success": True,
@@ -60,7 +78,7 @@ def browse_by_cluster(body=None, storage_engine=None):
         }
 
 
-def browse(num_inst=30, mode="random", random_seed=None, storage_engine=None):
+def browse(num_inst=30, mode="random", random_seed=None, storage_engine=None, cache=None):
     """Browse the database
 
     Args:

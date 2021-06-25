@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 @register_as_operation(name=OP.UPDATE_ONE_BY_ID)
-def update_one_by_id(body=None, storage_engine=None):
+def update_one_by_id(body=None, storage_engine=None, cache=None):
     target_index, metadata = body["target_index"], body["metadata"]
 
     try:
@@ -37,7 +37,7 @@ def update_one_by_id(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.UPDATE_MANY_BY_IDS)
-def update_many_by_ids(body=None, storage_engine=None):
+def update_many_by_ids(body=None, storage_engine=None, cache=None):
     target_index_list, metadata_list = body["target_index_list"], body["metadata_list"]
 
     try:

@@ -39,7 +39,8 @@ def browse_by_cluster():
     msg = {
         "request_type": "browse_by_cluster",
         "body": {
-            "num_inst": 10
+            "num_inst": 10,
+            "cache_mode": "aggressive"
         }
     }
 

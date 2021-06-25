@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 @register_as_operation(name=OP.DELETE_ONE_BY_ID)
-def delete_one_by_id(body=None, storage_engine=None):
+def delete_one_by_id(body=None, storage_engine=None, cache=None):
     target_index = body["target_index"]
 
     try:
@@ -35,7 +35,7 @@ def delete_one_by_id(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.DELETE_ALL)
-def delete_all(body=None, storage_engine=None):
+def delete_all(body=None, storage_engine=None, cache=None):
 
     try:
         result = storage_engine.clean_storage()
@@ -61,7 +61,7 @@ def delete_all(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.DELETE_MANY_BY_IDS)
-def delete_many_by_ids(body=None, storage_engine=None):
+def delete_many_by_ids(body=None, storage_engine=None, cache=None):
     target_index_list = body["target_index_list"]
 
     try:
