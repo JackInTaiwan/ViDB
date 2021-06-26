@@ -2,6 +2,7 @@ import os
 
 from msg_resolver import RESOLVER
 from storage_engine import STORAGE_ENGINE
+from cache import CACHE
 
 from .util.config import Config
 from .util.logging import logging_config
@@ -38,10 +39,16 @@ def setup_storage_engine(model="default"):
     return storage_engine
 
 
-def setup_operation():
+def setup_operation(model="default"):
     import pkgutil
     from importlib import import_module
     import operation
 
     for importer, modname, ispkg in pkgutil.iter_modules(operation.__path__):
         import_module("operation.{}".format(modname))
+
+
+def setup_cache():
+    cache = CACHE["default"]()
+
+    return cache

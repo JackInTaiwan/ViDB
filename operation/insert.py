@@ -1,9 +1,8 @@
 import io
 import os
 import logging
-import cv2
 import base64
-import numpy as np
+import time
 
 from PIL import Image
 from . import register_as_operation
@@ -15,13 +14,15 @@ logger = logging.getLogger(__name__)
 
 
 @register_as_operation(name=OP.INSERT_ONE_BY_PATH)
-def insert_one_by_path(body=None, storage_engine=None):
+def insert_one_by_path(body=None, storage_engine=None, cache=None):
     image_path, metadata = body["image_path"], body["metadata"]
 
     try:
+        insert_time = time.time()
         result = insert_one(image_path, metadata, storage_engine=storage_engine)
 
         if result["success"]:
+            cache.InsertUpdate()
             return {
                 "success": True,
                 "body": {
@@ -44,7 +45,7 @@ def insert_one_by_path(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.INSERT_MANY_BY_DIR)
-def insert_many_by_dir(body=None, storage_engine=None):
+def insert_many_by_dir(body=None, storage_engine=None, cache=None):
     image_fold_dir, metadata = body["image_fold_dir"], body["metadata"]
 
     try:
@@ -55,6 +56,8 @@ def insert_many_by_dir(body=None, storage_engine=None):
         meta_file_list = metadata.keys()
         index_list = []
 
+        insert_time = time.time()
+
         for filename in os.listdir(image_fold_dir):
             metadata_ = metadata[filename] if filename in meta_file_list else None
             result = insert_one(os.path.join(image_fold_dir, filename), metadata_, storage_engine=storage_engine)
@@ -63,6 +66,7 @@ def insert_many_by_dir(body=None, storage_engine=None):
             else:
                 index_list.append(result["index"])
         else:
+            cache.InsertUpdate()
             return {
                 "success": True,
                 "body": {
@@ -85,13 +89,14 @@ def insert_many_by_dir(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.INSERT_ONE_BY_BYTE)
-def insert_one_by_bytes(body=None, storage_engine=None):
+def insert_one_by_bytes(body=None, storage_engine=None, cache=None):
     bytes, metadata = body["bytes"], body["metadata"]
 
     try:
         result = insert_one_byte(bytes, metadata, storage_engine=storage_engine)
 
         if result["success"]:
+            cache.InsertUpdate()
             return {
                 "success": True,
                 "body": {
@@ -114,13 +119,14 @@ def insert_one_by_bytes(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.INSERT_MANY_BY_BYTE)
-def insert_many_by_bytes(body=None, storage_engine=None):
+def insert_many_by_bytes(body=None, storage_engine=None, cache=None):
     bytes_list, metadata_list = body["bytes_list"], body["metadata"]
 
     try:
         metadata_list = metadata_list or []
         index_list = []
 
+        insert_time = time.time()
         for img_b, md in zip(bytes_list, metadata_list):
             result = insert_one_byte(img_b, md, storage_engine=storage_engine)
             if not result["success"]:
@@ -128,6 +134,7 @@ def insert_many_by_bytes(body=None, storage_engine=None):
             else:
                 index_list.append(result["index"])
         else:
+            cache.InsertUpdate()
             return {
                 "success": True,
                 "body": {

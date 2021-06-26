@@ -1,5 +1,6 @@
 import base64
 import logging
+import time
 
 from . import register_as_operation
 from variable import operation as OP
@@ -10,11 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 @register_as_operation(name=OP.QUERY_NEAREST_BY_CONTENT)
-def query_nearest_by_content(body=None, storage_engine=None):
-    target_index, num_inst, return_origin_size = body["target_index"], body["num_inst"], body["return_origin_size"]
+def query_nearest_by_content(body=None, storage_engine=None, cache=None):
+    target_index, num_inst, return_origin_size = body["target_index"], body["num_inst"], body["return_origin_size"]     
 
     try:
-        result = find_instance_by_mode(target_index, num_inst, True, "content", storage_engine, return_origin_size)
+        
+        result = find_instance_by_mode(target_index, num_inst, True, "content", storage_engine, return_origin_size)        
 
         if result:
             return {
@@ -37,8 +39,9 @@ def query_nearest_by_content(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.QUERY_NEAREST_BY_STYLE)
-def query_nearest_by_style(body=None, storage_engine=None):
+def query_nearest_by_style(body=None, storage_engine=None, cache=None):
     target_index, num_inst, return_origin_size = body["target_index"], body["num_inst"], body["return_origin_size"]
+
 
     try:
         result = find_instance_by_mode(target_index, num_inst, True, "style", storage_engine, return_origin_size)
@@ -64,7 +67,7 @@ def query_nearest_by_style(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.QUERY_FARTHEST_BY_CONTENT)
-def query_farthest_by_content(body=None, storage_engine=None):
+def query_farthest_by_content(body=None, storage_engine=None, cache=None):
     target_index, num_inst, return_origin_size = body["target_index"], body["num_inst"], body["return_origin_size"]
 
     try:
@@ -91,7 +94,7 @@ def query_farthest_by_content(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.QUERY_FARTHEST_BY_STYLE)
-def query_farthest_by_style(body=None, storage_engine=None):
+def query_farthest_by_style(body=None, storage_engine=None, cache=None):
     target_index, num_inst, return_origin_size = body["target_index"], body["num_inst"], body["return_origin_size"]
 
     try:
@@ -118,7 +121,7 @@ def query_farthest_by_style(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.QUERY_BY_TAG_ALL)
-def query_by_tag_all(body=None, storage_engine=None):
+def query_by_tag_all(body=None, storage_engine=None, cache=None):
     target_index, num_inst, tags, return_origin_size = body["target_index"], body["num_inst"], body["tags"], body["return_origin_size"]
 
     try:
@@ -145,7 +148,7 @@ def query_by_tag_all(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.QUERY_BY_TAG_PARTIAL)
-def query_by_tag_partial(body=None, storage_engine=None):
+def query_by_tag_partial(body=None, storage_engine=None, cache=None):
     target_index, num_inst, tags, return_origin_size = body["target_index"], body["num_inst"], body["tags"], body["return_origin_size"]
 
     try:
@@ -172,7 +175,7 @@ def query_by_tag_partial(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.QUERY_RANGE_BY_CONTENT)
-def query_range_by_content(body=None, storage_engine=None):
+def query_range_by_content(body=None, storage_engine=None, cache=None):
     group_index, num_inst, return_origin_size = body["group_index"], body["num_inst"], body["return_origin_size"]
 
     try:
@@ -199,11 +202,12 @@ def query_range_by_content(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.QUERY_RANGE_BY_STYLE)
-def query_range_by_style(body=None, storage_engine=None):
+def query_range_by_style(body=None, storage_engine=None, cache=None):
     group_index, num_inst, return_origin_size = body["group_index"], body["num_inst"], body["return_origin_size"]
 
     try:
         result = find_instance_by_range(group_index, num_inst, "style", storage_engine, return_origin_size)
+
 
         if result:
             return {

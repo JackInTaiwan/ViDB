@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 @register_as_operation(name=OP.RETRIEVE_ONE)
-def retrieve_one(body=None, storage_engine=None):
+def retrieve_one(body=None, storage_engine=None, cache=None):
     try:
         target_index = body["target_index"]
         return_origin_size = body["return_origin_size"] if "return_origin_size" in body.keys() else False
@@ -40,7 +40,7 @@ def retrieve_one(body=None, storage_engine=None):
 
 
 @register_as_operation(name=OP.RETRIEVE_MANY)
-def retrieve_many(body=None, storage_engine=None):
+def retrieve_many(body=None, storage_engine=None, cache=None):
     try:
         target_index_list = body["target_index_list"]
         return_origin_size = body["return_origin_size"] if "return_origin_size" in body.keys() else False
