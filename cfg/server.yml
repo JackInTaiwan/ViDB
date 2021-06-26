@@ -16,6 +16,10 @@ storage_engine:
   storage_dir: "./storage/"
   storage_page_max_buffer: 5
 
+cache:
+  browse_by_cluster:
+    buffer_time: 100  # seconds
+
 visual_model:
   model: "resnet50"
   device: "cuda"
