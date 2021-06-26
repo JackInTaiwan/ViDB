@@ -47,6 +47,7 @@ def setup_operation(model="default"):
     for importer, modname, ispkg in pkgutil.iter_modules(operation.__path__):
         import_module("operation.{}".format(modname))
 
+
 def setup_cache():
     cache = CACHE["default"]()
 
